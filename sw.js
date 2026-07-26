@@ -1,4 +1,4 @@
-const CACHE_NAME = "hdu-0854-workbench-v2";
+const CACHE_NAME = "hdu-0854-workbench-v3";
 const CORE_ASSETS = [
   "./",
   "./index.html",
