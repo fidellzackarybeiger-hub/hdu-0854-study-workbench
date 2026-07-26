@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1f2923">
+  <meta name="description" content="杭电0854电子信息专属考研工作台">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="考研工作台">
+  <title>杭电0854考研工作台</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">
+        <div class="brand-mark">研</div>
+        <div>
+          <strong>研途</strong>
+          <span>HDU 0854</span>
+        </div>
+      </div>
+
+      <nav class="side-nav">
+        <button class="nav-item active" data-scroll="dashboard">
+          <i data-lucide="layout-dashboard"></i><span>总览</span>
+        </button>
+        <button class="nav-item" data-scroll="today-plan">
+          <i data-lucide="calendar-check-2"></i><span>今日计划</span>
+        </button>
+        <button class="nav-item" data-scroll="focus-panel">
+          <i data-lucide="timer"></i><span>专注计时</span>
+        </button>
+        <button class="nav-item" data-scroll="summer-plan">
+          <i data-lucide="route"></i><span>暑假战役</span>
+        </button>
+        <button class="nav-item" data-scroll="progress-panel">
+          <i data-lucide="chart-no-axes-combined"></i><span>进度复盘</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="identity-card">
+          <span class="eyebrow">考生档案</span>
+          <strong>温州理工学院</strong>
+          <span>电子信息 · 数一英一</span>
+        </div>
+        <button class="icon-text-button ghost" id="settings-button">
+          <i data-lucide="settings-2"></i><span>工作台设置</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="workspace" id="dashboard">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow" id="today-label">2026年7月26日 星期日</p>
+          <h1>杭电0854电子信息专属考研工作台</h1>
+        </div>
+        <div class="top-actions">
+          <button class="icon-button" id="export-button" title="导出本机数据" aria-label="导出本机数据">
+            <i data-lucide="download"></i>
+          </button>
+          <label class="icon-button" title="导入本机数据" aria-label="导入本机数据">
+            <i data-lucide="upload"></i>
+            <input type="file" id="import-input" accept="application/json" hidden>
+          </label>
+          <button class="icon-button mobile-settings" id="mobile-settings-button" title="设置" aria-label="设置">
+            <i data-lucide="settings-2"></i>
+          </button>
+        </div>
+      </header>
+
+      <section class="countdown-panel" aria-labelledby="countdown-title">
+        <div class="countdown-main">
+          <div>
+            <p class="countdown-kicker">全国硕士研究生招生考试</p>
+            <h2 id="countdown-title">距离初试还有</h2>
+          </div>
+          <div class="countdown-number-wrap">
+            <strong class="countdown-number" id="exam-days">147</strong>
+            <span>天</span>
+          </div>
+          <div class="countdown-meta">
+            <span><i data-lucide="flag"></i> 初试日期 <b id="exam-date-label">2026.12.19</b></span>
+            <span><i data-lucide="target"></i> 总分目标 <b>330+</b></span>
+          </div>
+        </div>
+
+        <div class="stage-grid">
+          <article class="stage-item accent-green">
+            <span>暑假黄金期</span>
+            <strong id="summer-days">37<small>天</small></strong>
+            <div class="mini-track"><i id="summer-track"></i></div>
+          </article>
+          <article class="stage-item accent-blue">
+            <span>强化阶段</span>
+            <strong id="strength-days">27<small>天</small></strong>
+            <div class="mini-track"><i id="strength-track"></i></div>
+          </article>
+          <article class="stage-item accent-amber">
+            <span>冲刺阶段</span>
+            <strong id="sprint-days">87<small>天</small></strong>
+            <div class="mini-track"><i id="sprint-track"></i></div>
+          </article>
+          <article class="stage-item accent-coral">
+            <span>初试倒计时</span>
+            <strong id="exam-days-small">147<small>天</small></strong>
+            <div class="mini-track"><i id="exam-track"></i></div>
+          </article>
+        </div>
+
+        <blockquote>
+          <i data-lucide="quote"></i>
+          <span>熟读王叔和，不如临证多。复习亦是如此。</span>
+        </blockquote>
+      </section>
+
+      <section class="metrics-strip" aria-label="今日学习数据">
+        <article class="metric">
+          <div class="metric-icon green"><i data-lucide="clock-3"></i></div>
+          <div>
+            <span>今日学习时长</span>
+            <strong><b id="study-minutes">0</b><small> / 750 分钟</small></strong>
+          </div>
+          <div class="metric-progress"><i id="study-progress"></i></div>
+        </article>
+        <article class="metric">
+          <div class="metric-icon blue"><i data-lucide="circle-check-big"></i></div>
+          <div>
+            <span>每日任务完成率</span>
+            <strong><b id="completion-rate">0</b><small>%</small></strong>
+          </div>
+          <div class="metric-progress"><i id="completion-progress"></i></div>
+        </article>
+        <article class="metric">
+          <div class="metric-icon amber"><i data-lucide="languages"></i></div>
+          <div>
+            <span>今日单词背诵量</span>
+            <strong><b id="word-count">0</b><small> 个</small></strong>
+          </div>
+          <div class="stepper" data-field="words">
+            <button aria-label="减少单词量"><i data-lucide="minus"></i></button>
+            <button aria-label="增加单词量"><i data-lucide="plus"></i></button>
+          </div>
+        </article>
+        <article class="metric">
+          <div class="metric-icon coral"><i data-lucide="book-x"></i></div>
+          <div>
+            <span>今日新增错题</span>
+            <strong><b id="mistake-count">0</b><small> 题</small></strong>
+          </div>
+          <div class="stepper" data-field="mistakes">
+            <button aria-label="减少错题数"><i data-lucide="minus"></i></button>
+            <button aria-label="增加错题数"><i data-lucide="plus"></i></button>
+          </div>
+        </article>
+      </section>
+
+      <section class="quick-section" aria-labelledby="quick-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">常用模块</p>
+            <h2 id="quick-title">快速入口</h2>
+          </div>
+          <span class="section-note">所有记录自动保存在本机</span>
+        </div>
+        <div class="quick-grid">
+          <button class="quick-item" data-action="plan">
+            <span class="quick-icon green"><i data-lucide="calendar-days"></i></span>
+            <span><b>每日计划</b><small>8 项 · 12.5h</small></span>
+          </button>
+          <button class="quick-item" data-action="math">
+            <span class="quick-icon blue"><i data-lucide="sigma"></i></span>
+            <span><b>数学一刷题</b><small>强化 + 880</small></span>
+          </button>
+          <button class="quick-item" data-action="signal">
+            <span class="quick-icon coral"><i data-lucide="audio-waveform"></i></span>
+            <span><b>信号与系统</b><small>三大变换优先</small></span>
+          </button>
+          <button class="quick-item" data-action="english">
+            <span class="quick-icon amber"><i data-lucide="languages"></i></span>
+            <span><b>英语一</b><small>单词 + 阅读</small></span>
+          </button>
+          <button class="quick-item" data-action="politics">
+            <span class="quick-icon purple"><i data-lucide="library-big"></i></span>
+            <span><b>政治刷题</b><small>8月中旬启动</small></span>
+          </button>
+          <button class="quick-item" data-action="mistakes">
+            <span class="quick-icon red"><i data-lucide="notebook-tabs"></i></span>
+            <span><b>错题复盘</b><small>只标记，不誊抄</small></span>
+          </button>
+          <button class="quick-item" data-action="timer">
+            <span class="quick-icon tomato"><i data-lucide="timer-reset"></i></span>
+            <span><b>番茄计时</b><small>50 / 10 模式</small></span>
+          </button>
+          <button class="quick-item" data-action="overview">
+            <span class="quick-icon cyan"><i data-lucide="gauge"></i></span>
+            <span><b>进度总览</b><small>周趋势与阶段</small></span>
+          </button>
+        </div>
+      </section>
+
+      <div class="main-grid">
+        <section class="panel task-panel" id="today-plan">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">今日执行</p>
+              <h2>每日计划</h2>
+            </div>
+            <button class="icon-text-button" id="add-task-button">
+              <i data-lucide="plus"></i><span>新增任务</span>
+            </button>
+          </div>
+          <div class="daily-target">
+            <span>净学习目标 <b id="daily-target-label">12.5 小时</b></span>
+            <span>固定复盘 <b id="review-target-label">1 小时</b></span>
+          </div>
+          <div class="task-list" id="task-list"></div>
+          <div class="empty-state hidden" id="task-empty">
+            <i data-lucide="clipboard-check"></i>
+            <p>今日任务已清空，可新增任务。</p>
+          </div>
+        </section>
+
+        <aside class="right-column">
+          <section class="panel focus-panel" id="focus-panel">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">深度工作</p>
+                <h2>番茄计时</h2>
+              </div>
+              <button class="icon-button subtle" id="reset-timer-button" title="重置计时" aria-label="重置计时">
+                <i data-lucide="rotate-ccw"></i>
+              </button>
+            </div>
+            <div class="segmented" id="timer-mode">
+              <button class="active" data-minutes="50">专注 50</button>
+              <button data-minutes="25">短专注 25</button>
+              <button data-minutes="10">休息 10</button>
+            </div>
+            <label class="field-label" for="timer-subject">本轮科目</label>
+            <select id="timer-subject">
+              <option value="数学一">数学一</option>
+              <option value="信号与系统">信号与系统</option>
+              <option value="英语一">英语一</option>
+              <option value="政治">政治</option>
+              <option value="复盘">错题复盘</option>
+            </select>
+            <div class="timer-ring" id="timer-ring">
+              <div>
+                <strong id="timer-display">50:00</strong>
+                <span id="timer-status">准备开始</span>
+              </div>
+            </div>
+            <button class="primary-button full" id="timer-toggle">
+              <i data-lucide="play"></i><span>开始专注</span>
+            </button>
+            <p class="focus-note">完成专注轮次后，时长会自动计入今日学习数据。</p>
+          </section>
+
+          <section class="panel target-panel">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">目标院校</p>
+                <h2>杭州电子科技大学</h2>
+              </div>
+              <span class="school-badge">HDU</span>
+            </div>
+            <p class="major-name">0854 电子信息（新一代电子信息技术）</p>
+            <div class="subject-line">
+              <span>数学一</span><span>英语一</span><span>政治</span><span>843 信号与系统</span>
+            </div>
+            <div class="score-summary">
+              <div><span>参考复试线</span><strong>319</strong><small>2026届</small></div>
+              <div><span>个人目标</span><strong>330+</strong><small>稳中求进</small></div>
+              <div><span>目标缓冲</span><strong>10</strong><small>单科合计 340</small></div>
+            </div>
+            <div class="button-row">
+              <button class="secondary-button" data-action="scores">分数详情</button>
+              <button class="secondary-button" data-action="ratio">报录比记录</button>
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <section class="summer-plan" id="summer-plan">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">7.26 - 8.31 · 共37天</p>
+            <h2>暑假赶超计划</h2>
+          </div>
+          <span class="status-pill" id="current-phase-pill">第一阶段进行中</span>
+        </div>
+        <div class="phase-timeline">
+          <article class="phase-block current">
+            <div class="phase-index">01</div>
+            <div>
+              <span class="phase-date">7.26 - 8.10 · 16天</span>
+              <h3>核心攻坚期</h3>
+              <p>高数强化收口、概率论推进、880 基础与综合篇；信号三大变换建立主干。</p>
+            </div>
+            <span class="phase-state">当前</span>
+          </article>
+          <article class="phase-block">
+            <div class="phase-index">02</div>
+            <div>
+              <span class="phase-date">8.11 - 8.25 · 15天</span>
+              <h3>强化收尾期</h3>
+              <p>数学强化查漏、专业课重点题二刷；英语阅读保持稳定输入，政治选择题启动。</p>
+            </div>
+            <span class="phase-state">待执行</span>
+          </article>
+          <article class="phase-block">
+            <div class="phase-index">03</div>
+            <div>
+              <span class="phase-date">8.26 - 8.31 · 6天</span>
+              <h3>超前真题期</h3>
+              <p>专业课早年真题试跑，数学限时训练；形成九月可持续的科目日程模板。</p>
+            </div>
+            <span class="phase-state">待执行</span>
+          </article>
+        </div>
+        <div class="iron-rules">
+          <span><i data-lucide="shield-check"></i> 不重复刷基础课</span>
+          <span><i data-lucide="pen-line"></i> 错题只标不抄</span>
+          <span><i data-lucide="calculator"></i> 所有题目必动手计算</span>
+          <span><i data-lucide="coffee"></i> 每周休息半天</span>
+        </div>
+      </section>
+
+      <section class="progress-section" id="progress-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">数据复盘</p>
+            <h2>进度总览</h2>
+          </div>
+          <button class="icon-text-button ghost" id="manual-log-button">
+            <i data-lucide="square-pen"></i><span>补录数据</span>
+          </button>
+        </div>
+        <div class="progress-grid">
+          <div class="weekly-chart-wrap">
+            <div class="chart-heading">
+              <div>
+                <span>近7日净学习时长</span>
+                <strong id="weekly-total">0 小时</strong>
+              </div>
+              <span class="chart-target">日目标 12.5h</span>
+            </div>
+            <div class="weekly-chart" id="weekly-chart"></div>
+          </div>
+          <div class="subject-progress">
+            <div class="subject-progress-row">
+              <div><span>数学一</span><b id="math-progress-label">58%</b></div>
+              <div class="subject-track blue"><i id="math-progress" style="width:58%"></i></div>
+              <small>高数强化18讲 · 李良概率论 · 880基础+综合</small>
+            </div>
+            <div class="subject-progress-row">
+              <div><span>843 信号与系统</span><b id="signal-progress-label">40%</b></div>
+              <div class="subject-track coral"><i id="signal-progress" style="width:40%"></i></div>
+              <small>三大变换核心优先 · 课后重点题二刷</small>
+            </div>
+            <div class="subject-progress-row">
+              <div><span>英语一</span><b id="english-progress-label">35%</b></div>
+              <div class="subject-track amber"><i id="english-progress" style="width:35%"></i></div>
+              <small>2010-2020阅读一刷 · 单词二轮滚动</small>
+            </div>
+            <div class="subject-progress-row">
+              <div><span>政治</span><b id="politics-progress-label">0%</b></div>
+              <div class="subject-track purple"><i id="politics-progress" style="width:0%"></i></div>
+              <small>8月中旬启动 · 仅刷选择题</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <span><i data-lucide="hard-drive"></i> 数据只存在本机浏览器</span>
+        <button id="install-button" class="footer-button hidden">
+          <i data-lucide="monitor-down"></i> 添加到主屏幕
+        </button>
+        <span>建议每周导出一次备份</span>
+      </footer>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="移动端导航">
+    <button class="active" data-scroll="dashboard"><i data-lucide="layout-dashboard"></i><span>总览</span></button>
+    <button data-scroll="today-plan"><i data-lucide="calendar-check-2"></i><span>计划</span></button>
+    <button data-scroll="focus-panel"><i data-lucide="timer"></i><span>计时</span></button>
+    <button data-scroll="progress-panel"><i data-lucide="chart-no-axes-combined"></i><span>复盘</span></button>
+  </nav>
+
+  <dialog id="app-dialog">
+    <form method="dialog" class="dialog-shell" id="dialog-form">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow" id="dialog-kicker">工作台</p>
+          <h2 id="dialog-title">设置</h2>
+        </div>
+        <button class="icon-button subtle" value="cancel" aria-label="关闭">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="dialog-content" id="dialog-content"></div>
+      <div class="dialog-actions" id="dialog-actions"></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="./vendor/lucide.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

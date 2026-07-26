@@ -1,0 +1,15 @@
+{
+  "name": "hdu-0854-study-workbench",
+  "version": "1.0.0",
+  "private": true,
+  "description": "杭电0854电子信息专属考研工作台",
+  "scripts": {
+    "start": "npx http-server . -p 4174 -a 0.0.0.0 -c-1"
+  },
+  "dependencies": {
+    "lucide": "^0.468.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
