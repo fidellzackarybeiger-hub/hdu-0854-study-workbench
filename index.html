@@ -240,9 +240,18 @@
               </button>
             </div>
             <div class="segmented" id="timer-mode">
-              <button class="active" data-minutes="50">专注 50</button>
-              <button data-minutes="25">短专注 25</button>
-              <button data-minutes="10">休息 10</button>
+              <button class="active" data-minutes="50" data-kind="focus">专注 50</button>
+              <button data-minutes="25" data-kind="focus">短专注 25</button>
+              <button data-minutes="10" data-kind="break">休息 10</button>
+            </div>
+            <div class="timer-custom">
+              <label class="field-label" for="custom-timer-minutes">自定义专注时长（分钟）</label>
+              <div class="timer-custom-control">
+                <input id="custom-timer-minutes" type="number" min="1" max="720" step="1" value="50" inputmode="numeric">
+                <button type="button" class="secondary-button" id="apply-custom-timer">
+                  <i data-lucide="check"></i><span>应用</span>
+                </button>
+              </div>
             </div>
             <label class="field-label" for="timer-subject">本轮科目</label>
             <select id="timer-subject">
@@ -261,7 +270,7 @@
             <button class="primary-button full" id="timer-toggle">
               <i data-lucide="play"></i><span>开始专注</span>
             </button>
-            <p class="focus-note">完成专注轮次后，时长会自动计入今日学习数据。</p>
+            <p class="focus-note">完成专注轮次后自动计入今日学习时长；休息轮次不计入。</p>
           </section>
 
           <section class="panel target-panel">
@@ -344,6 +353,10 @@
             <i data-lucide="square-pen"></i><span>补录数据</span>
           </button>
         </div>
+        <div class="progress-rule">
+          <i data-lucide="calculator"></i>
+          <span>科目进度 = 已完成量 ÷ 本阶段计划总量，与专注计时分开计算。</span>
+        </div>
         <div class="progress-grid">
           <div class="weekly-chart-wrap">
             <div class="chart-heading">
@@ -357,23 +370,27 @@
           </div>
           <div class="subject-progress">
             <div class="subject-progress-row">
-              <div><span>数学一</span><b id="math-progress-label">58%</b></div>
+              <div><span>数学一</span><span class="subject-progress-value"><b id="math-progress-label">58%</b><button type="button" class="progress-edit-button" data-action="math" title="编辑数学一进度" aria-label="编辑数学一进度"><i data-lucide="pencil"></i></button></span></div>
               <div class="subject-track blue"><i id="math-progress" style="width:58%"></i></div>
+              <span class="progress-basis" id="math-progress-basis"></span>
               <small>高数强化18讲 · 李良概率论 · 880基础+综合</small>
             </div>
             <div class="subject-progress-row">
-              <div><span>843 信号与系统</span><b id="signal-progress-label">40%</b></div>
+              <div><span>843 信号与系统</span><span class="subject-progress-value"><b id="signal-progress-label">40%</b><button type="button" class="progress-edit-button" data-action="signal" title="编辑843 信号与系统进度" aria-label="编辑843 信号与系统进度"><i data-lucide="pencil"></i></button></span></div>
               <div class="subject-track coral"><i id="signal-progress" style="width:40%"></i></div>
+              <span class="progress-basis" id="signal-progress-basis"></span>
               <small>三大变换核心优先 · 课后重点题二刷</small>
             </div>
             <div class="subject-progress-row">
-              <div><span>英语一</span><b id="english-progress-label">35%</b></div>
+              <div><span>英语一</span><span class="subject-progress-value"><b id="english-progress-label">35%</b><button type="button" class="progress-edit-button" data-action="english" title="编辑英语一进度" aria-label="编辑英语一进度"><i data-lucide="pencil"></i></button></span></div>
               <div class="subject-track amber"><i id="english-progress" style="width:35%"></i></div>
+              <span class="progress-basis" id="english-progress-basis"></span>
               <small>2010-2020阅读一刷 · 单词二轮滚动</small>
             </div>
             <div class="subject-progress-row">
-              <div><span>政治</span><b id="politics-progress-label">0%</b></div>
+              <div><span>政治</span><span class="subject-progress-value"><b id="politics-progress-label">0%</b><button type="button" class="progress-edit-button" data-action="politics" title="编辑政治进度" aria-label="编辑政治进度"><i data-lucide="pencil"></i></button></span></div>
               <div class="subject-track purple"><i id="politics-progress" style="width:0%"></i></div>
+              <span class="progress-basis" id="politics-progress-basis"></span>
               <small>8月中旬启动 · 仅刷选择题</small>
             </div>
           </div>

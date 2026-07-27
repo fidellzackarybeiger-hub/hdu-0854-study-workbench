@@ -31,7 +31,8 @@ const DEFAULT_STATE = {
     scoreMath: 105,
     scoreEnglish: 55,
     scoreSignal: 120,
-    scorePolitics: 60
+    scorePolitics: 60,
+    customFocusMinutes: 50
   },
   progress: {
     math: 58,
@@ -39,6 +40,7 @@ const DEFAULT_STATE = {
     english: 35,
     politics: 0
   },
+  progressDetails: {},
   ratio: {
     applicants: "",
     admitted: "",
@@ -49,10 +51,12 @@ const DEFAULT_STATE = {
 };
 
 let state = loadState();
+const initialFocusMinutes = clamp(Number(state.settings.customFocusMinutes) || 50, 1, 720);
 let timerInterval = null;
-let timerTotal = 50 * 60;
+let timerTotal = initialFocusMinutes * 60;
 let timerRemaining = timerTotal;
 let timerRunning = false;
+let timerIsBreak = false;
 let deferredInstallPrompt = null;
 let toastTimer = null;
 
@@ -69,6 +73,7 @@ function mergeState(saved) {
     ...saved,
     settings: { ...DEFAULT_STATE.settings, ...(saved?.settings || {}) },
     progress: { ...DEFAULT_STATE.progress, ...(saved?.progress || {}) },
+    progressDetails: saved?.progressDetails && typeof saved.progressDetails === "object" ? saved.progressDetails : {},
     ratio: { ...DEFAULT_STATE.ratio, ...(saved?.ratio || {}) },
     daily: saved?.daily || {},
     mistakeNotes: Array.isArray(saved?.mistakeNotes) ? saved.mistakeNotes : []
@@ -284,9 +289,23 @@ function renderWeeklyChart() {
 
 function renderProgress() {
   Object.entries(state.progress).forEach(([key, value]) => {
-    const safeValue = clamp(Number(value) || 0, 0, 100);
+    const detail = state.progressDetails[key];
+    const completed = Number(detail?.completed);
+    const total = Number(detail?.total);
+    const hasCalculation = Number.isFinite(completed) && completed >= 0 && Number.isFinite(total) && total > 0;
+    const safeValue = hasCalculation
+      ? clamp(Math.round((completed / total) * 100), 0, 100)
+      : clamp(Number(value) || 0, 0, 100);
+
+    state.progress[key] = safeValue;
     $(`#${key}-progress`).style.width = `${safeValue}%`;
     $(`#${key}-progress-label`).textContent = `${safeValue}%`;
+    const basis = $(`#${key}-progress-basis`);
+    if (basis) {
+      basis.textContent = hasCalculation
+        ? `已完成 ${completed} / 计划 ${total} ${detail.unit || "项"}`
+        : "历史手动进度，点击铅笔设置计算依据";
+    }
   });
 }
 
@@ -618,7 +637,9 @@ const MODULES = {
 
 function openModuleDialog(moduleKey) {
   const module = MODULES[moduleKey];
-  const current = state.progress[module.key];
+  const current = clamp(Number(state.progress[module.key]) || 0, 0, 100);
+  const savedDetail = state.progressDetails[module.key];
+  const detail = savedDetail || { completed: current, total: 100, unit: "计划点" };
   const politicsCallout = moduleKey === "politics"
     ? `<div class="callout amber-callout" style="margin-bottom:12px">政治按计划在 8 月中旬启动。现在无需用大块时间提前挤占数学和专业课。</div>`
     : "";
@@ -628,34 +649,62 @@ function openModuleDialog(moduleKey) {
     content: `
       ${politicsCallout}
       <div class="module-list">
-        ${module.rows.map(([title, detail]) => `
+        ${module.rows.map(([title, detailText]) => `
           <div class="module-row">
-            <span><b>${escapeHtml(title)}</b><small>${escapeHtml(detail)}</small></span>
+            <span><b>${escapeHtml(title)}</b><small>${escapeHtml(detailText)}</small></span>
             <i data-lucide="chevron-right"></i>
           </div>
         `).join("")}
       </div>
-      <div class="form-field" style="margin-top:16px">
-        <label for="module-progress-input">当前阶段完成度：<b id="module-progress-value">${current}%</b></label>
-        <input id="module-progress-input" type="range" min="0" max="100" step="1" value="${current}" style="width:100%">
+      <div class="callout" style="margin-top:16px">
+        计算口径：已完成量 ÷ 本阶段计划总量。专注计时只累计学习时长，不会自动修改科目进度。
       </div>
+      <div class="form-grid" style="margin-top:14px">
+        <div class="form-field">
+          <label for="module-completed-input">已完成量</label>
+          <input id="module-completed-input" type="number" min="0" step="1" value="${escapeHtml(detail.completed)}">
+        </div>
+        <div class="form-field">
+          <label for="module-total-input">本阶段计划总量</label>
+          <input id="module-total-input" type="number" min="1" step="1" value="${escapeHtml(detail.total)}">
+        </div>
+        <div class="form-field full">
+          <label for="module-unit-input">单位</label>
+          <input id="module-unit-input" type="text" maxlength="12" value="${escapeHtml(detail.unit || "项")}" placeholder="例如：题、讲、篇、章、套">
+        </div>
+      </div>
+      <p class="form-help">当前自动计算进度：<b id="module-progress-value">${current}%</b></p>
     `,
     actions: `
       <button type="button" class="secondary-button" data-dialog-close>取消</button>
       <button type="button" class="primary-button" id="save-module-button">保存进度</button>
     `
   });
-  const slider = $("#module-progress-input");
-  slider.addEventListener("input", () => {
-    $("#module-progress-value").textContent = `${slider.value}%`;
-  });
+
+  const completedInput = $("#module-completed-input");
+  const totalInput = $("#module-total-input");
+  const unitInput = $("#module-unit-input");
+  const calculateProgress = () => {
+    const completed = Math.max(0, Number(completedInput.value) || 0);
+    const total = Math.max(1, Number(totalInput.value) || 1);
+    const percentage = clamp(Math.round((completed / total) * 100), 0, 100);
+    $("#module-progress-value").textContent = `${percentage}%（${completed} ÷ ${total}）`;
+    return { completed, total, percentage };
+  };
+
+  completedInput.addEventListener("input", calculateProgress);
+  totalInput.addEventListener("input", calculateProgress);
+  calculateProgress();
   $("[data-dialog-close]").addEventListener("click", closeDialog);
   $("#save-module-button").addEventListener("click", () => {
-    state.progress[module.key] = Number(slider.value);
+    const { completed, total, percentage } = calculateProgress();
+    const unit = unitInput.value.trim().slice(0, 12) || "项";
+    state.progressDetails[module.key] = { completed, total, unit };
+    state.progress[module.key] = percentage;
     saveState();
     closeDialog();
     renderProgress();
-    showToast(`${module.title}进度已更新`);
+    showToast(`${module.title}进度已按完成量重新计算`);
   });
 }
 
@@ -794,12 +843,15 @@ function updateTimerDisplay() {
   const minutes = Math.floor(timerRemaining / 60);
   const seconds = timerRemaining % 60;
   $("#timer-display").textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  const progress = ((timerTotal - timerRemaining) / timerTotal) * 100;
+  const progress = timerTotal > 0 ? ((timerTotal - timerRemaining) / timerTotal) * 100 : 0;
   $("#timer-ring").style.setProperty("--timer-progress", `${progress}%`);
-  $("#timer-status").textContent = timerRunning ? `${$("#timer-subject").value}专注中` : "准备开始";
+  $("#timer-status").textContent = timerRunning
+    ? timerIsBreak ? "休息中" : `${$("#timer-subject").value}专注中`
+    : timerRemaining < timerTotal ? "已暂停" : timerIsBreak ? "准备休息" : "准备开始";
+  const startLabel = timerRemaining < timerTotal ? "继续计时" : timerIsBreak ? "开始休息" : "开始专注";
   $("#timer-toggle").innerHTML = timerRunning
     ? `<i data-lucide="pause"></i><span>暂停计时</span>`
-    : `<i data-lucide="play"></i><span>${timerRemaining < timerTotal ? "继续专注" : "开始专注"}</span>`;
+    : `<i data-lucide="play"></i><span>${startLabel}</span>`;
   renderIcons();
 }
 
@@ -829,7 +881,8 @@ function completeTimer() {
   timerRemaining = 0;
   updateTimerDisplay();
   const minutes = Math.round(timerTotal / 60);
-  if (minutes !== 10) {
+  const completedWasBreak = timerIsBreak;
+  if (!completedWasBreak) {
     getDaily().studyMinutes += minutes;
     saveState();
     renderToday();
@@ -837,13 +890,14 @@ function completeTimer() {
   } else {
     showToast("休息结束，可以进入下一轮专注");
   }
-  setTimeout(() => resetTimer(minutes), 800);
+  setTimeout(() => resetTimer(minutes, completedWasBreak), 800);
 }
 
-function resetTimer(minutes) {
+function resetTimer(minutes = Math.round(timerTotal / 60), isBreak = timerIsBreak) {
   clearInterval(timerInterval);
   timerRunning = false;
-  const selected = minutes || Number($("#timer-mode button.active").dataset.minutes);
+  timerIsBreak = Boolean(isBreak);
+  const selected = clamp(Math.round(Number(minutes) || 50), 1, 720);
   timerTotal = selected * 60;
   timerRemaining = timerTotal;
   updateTimerDisplay();
@@ -947,13 +1001,42 @@ function bindEvents() {
 
   $$("#timer-mode button").forEach((button) => {
     button.addEventListener("click", () => {
-      if (timerRunning && !confirm("切换模式会重置当前计时，确定继续？")) return;
+      if (timerRunning && !confirm("切换时长会重置当前计时，确定继续？")) return;
+      const minutes = Number(button.dataset.minutes);
+      const isBreak = button.dataset.kind === "break";
       $$("#timer-mode button").forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
-      resetTimer(Number(button.dataset.minutes));
+      if (!isBreak) {
+        state.settings.customFocusMinutes = minutes;
+        $("#custom-timer-minutes").value = minutes;
+        saveState();
+      }
+      resetTimer(minutes, isBreak);
     });
   });
 
+  const applyCustomTimer = () => {
+    const input = $("#custom-timer-minutes");
+    const rawMinutes = Number(input.value);
+    if (!Number.isFinite(rawMinutes) || rawMinutes < 1 || rawMinutes > 720) {
+      showToast("请输入 1 到 720 分钟之间的时长");
+      input.focus();
+      return;
+    }
+    if (timerRunning && !confirm("应用新时长会重置当前计时，确定继续？")) return;
+    const minutes = Math.round(rawMinutes);
+    input.value = minutes;
+    $$("#timer-mode button").forEach((item) => item.classList.remove("active"));
+    state.settings.customFocusMinutes = minutes;
+    saveState();
+    resetTimer(minutes, false);
+    showToast(`本轮专注时长已设为 ${minutes} 分钟`);
+  };
+
+  $("#apply-custom-timer").addEventListener("click", applyCustomTimer);
+  $("#custom-timer-minutes").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") applyCustomTimer();
+  });
   $("#timer-toggle").addEventListener("click", toggleTimer);
   $("#reset-timer-button").addEventListener("click", () => resetTimer());
 
@@ -985,6 +1068,16 @@ function registerServiceWorker() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const savedFocusMinutes = clamp(Number(state.settings.customFocusMinutes) || 50, 1, 720);
+  $("#custom-timer-minutes").value = savedFocusMinutes;
+  $$("#timer-mode button").forEach((button) => button.classList.remove("active"));
+  const matchingPreset = $$("#timer-mode button").find((button) =>
+    button.dataset.kind === "focus" && Number(button.dataset.minutes) === savedFocusMinutes
+  );
+  matchingPreset?.classList.add("active");
+  timerIsBreak = false;
+  timerTotal = savedFocusMinutes * 60;
+  timerRemaining = timerTotal;
   renderAll();
   bindEvents();
   updateTimerDisplay();
