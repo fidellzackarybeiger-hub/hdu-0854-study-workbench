@@ -193,7 +193,7 @@
           </button>
           <button class="quick-item" data-action="mistakes">
             <span class="quick-icon red"><i data-lucide="notebook-tabs"></i></span>
-            <span><b>错题复盘</b><small>只标记，不誊抄</small></span>
+            <span><b>错题复盘</b><small id="mistake-review-summary">按 1·3·7·14 天复盘</small></span>
           </button>
           <button class="quick-item" data-action="timer">
             <span class="quick-icon tomato"><i data-lucide="timer-reset"></i></span>
@@ -355,7 +355,33 @@
         </div>
         <div class="progress-rule">
           <i data-lucide="calculator"></i>
-          <span>科目进度 = 已完成量 ÷ 本阶段计划总量，与专注计时分开计算。</span>
+          <span>科目进度按完成量计算；全年账本只累计真实学习时长，两者互不混算。</span>
+        </div>
+        <div class="year-overview">
+          <div class="year-heading">
+            <div>
+              <span>全年学习账本</span>
+              <strong id="year-overview-title">2026 年累计</strong>
+            </div>
+            <span class="year-note">每格一天，颜色越深表示越接近日目标</span>
+          </div>
+          <div class="year-stats">
+            <div><span>全年累计</span><strong id="year-total-hours">0 小时</strong></div>
+            <div><span>本月累计</span><strong id="month-total-hours">0 小时</strong></div>
+            <div><span>学习天数</span><strong id="year-study-days">0 天</strong></div>
+            <div><span>达标天数</span><strong id="year-target-days">0 天</strong></div>
+            <div><span>当前连续</span><strong id="current-streak">0 天</strong></div>
+          </div>
+          <div class="year-heatmap-scroll" id="year-heatmap-scroll">
+            <div class="year-heatmap" id="year-heatmap" aria-label="全年每日学习时长热力图"></div>
+          </div>
+          <div class="heatmap-legend">
+            <span>未学习</span><i data-level="0"></i><i data-level="1"></i><i data-level="2"></i><i data-level="3"></i><i data-level="4"></i><span>达到目标</span>
+          </div>
+        </div>
+        <div class="review-reminder" id="review-reminder">
+          <span><i data-lucide="refresh-cw"></i><b id="review-reminder-title">今日无到期复盘</b><small id="review-reminder-detail">新错题将在 1、3、7、14 天后提醒</small></span>
+          <button type="button" class="secondary-button" data-action="mistakes">查看错题</button>
         </div>
         <div class="progress-grid">
           <div class="weekly-chart-wrap">

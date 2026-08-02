@@ -1,4 +1,5 @@
 const STORAGE_KEY = "hdu0854-workbench-v1";
+const REVIEW_INTERVALS = [1, 3, 7, 14];
 
 const SUBJECT_META = {
   "数学一": { className: "subject-math", key: "math" },
@@ -76,7 +77,7 @@ function mergeState(saved) {
     progressDetails: saved?.progressDetails && typeof saved.progressDetails === "object" ? saved.progressDetails : {},
     ratio: { ...DEFAULT_STATE.ratio, ...(saved?.ratio || {}) },
     daily: saved?.daily || {},
-    mistakeNotes: Array.isArray(saved?.mistakeNotes) ? saved.mistakeNotes : []
+    mistakeNotes: Array.isArray(saved?.mistakeNotes) ? saved.mistakeNotes.map(normalizeMistakeNote) : []
   };
 }
 
@@ -114,6 +115,23 @@ function inclusiveDaysUntil(dateString) {
   const target = parseLocalDate(dateString);
   const diff = Math.floor((target - startOfToday()) / 86400000) + 1;
   return Math.max(0, diff);
+}
+
+function addDays(dateString, days) {
+  const date = parseLocalDate(dateString);
+  date.setDate(date.getDate() + days);
+  return localDateKey(date);
+}
+
+function normalizeMistakeNote(note) {
+  const date = note?.date || localDateKey();
+  return {
+    ...note,
+    date,
+    reviewStep: clamp(Number(note?.reviewStep) || 0, 0, REVIEW_INTERVALS.length - 1),
+    nextReviewDate: note?.nextReviewDate || date,
+    reviewComplete: Boolean(note?.reviewComplete)
+  };
 }
 
 function getDaily(dateKey = localDateKey()) {
@@ -200,6 +218,8 @@ function renderToday() {
   $("#review-target-label").textContent = formatHours(state.settings.reviewMinutes);
   renderTasks();
   renderWeeklyChart();
+  renderYearOverview();
+  renderReviewReminder();
 }
 
 function renderTasks() {
@@ -287,6 +307,87 @@ function renderWeeklyChart() {
   $("#weekly-total").textContent = `${(total / 60).toFixed(1)} 小时`;
 }
 
+function formatCompactHours(minutes) {
+  const hours = minutes / 60;
+  if (hours >= 100) return `${Math.round(hours)} 小时`;
+  return `${hours.toFixed(1)} 小时`;
+}
+
+function renderYearOverview() {
+  const today = startOfToday();
+  const year = today.getFullYear();
+  const yearStart = new Date(year, 0, 1);
+  const yearEnd = new Date(year, 11, 31);
+  const monthPrefix = `${year}-${String(today.getMonth() + 1).padStart(2, "0")}-`;
+  const target = Math.max(1, Number(state.settings.dailyTargetMinutes) || 1);
+  let totalMinutes = 0;
+  let monthMinutes = 0;
+  let studyDays = 0;
+  let targetDays = 0;
+
+  Object.entries(state.daily).forEach(([key, daily]) => {
+    if (!key.startsWith(`${year}-`)) return;
+    const minutes = Math.max(0, Number(daily?.studyMinutes) || 0);
+    totalMinutes += minutes;
+    if (key.startsWith(monthPrefix)) monthMinutes += minutes;
+    if (minutes > 0) studyDays += 1;
+    if (minutes >= target) targetDays += 1;
+  });
+
+  let streak = 0;
+  const cursor = new Date(today);
+  while ((state.daily[localDateKey(cursor)]?.studyMinutes || 0) > 0) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  $("#year-overview-title").textContent = `${year} 年累计`;
+  $("#year-total-hours").textContent = formatCompactHours(totalMinutes);
+  $("#month-total-hours").textContent = formatCompactHours(monthMinutes);
+  $("#year-study-days").textContent = `${studyDays} 天`;
+  $("#year-target-days").textContent = `${targetDays} 天`;
+  $("#current-streak").textContent = `${streak} 天`;
+
+  const cells = [];
+  for (let blank = 0; blank < yearStart.getDay(); blank += 1) {
+    cells.push('<i class="heat-cell empty" aria-hidden="true"></i>');
+  }
+  for (const date = new Date(yearStart); date <= yearEnd; date.setDate(date.getDate() + 1)) {
+    const key = localDateKey(date);
+    const minutes = Math.max(0, Number(state.daily[key]?.studyMinutes) || 0);
+    const ratio = minutes / target;
+    const level = minutes === 0 ? 0 : ratio < 0.25 ? 1 : ratio < 0.5 ? 2 : ratio < 0.75 ? 3 : 4;
+    const future = date > today ? " future" : "";
+    cells.push(`<i class="heat-cell${future}" data-level="${level}" title="${key} · ${minutes} 分钟"></i>`);
+  }
+  $("#year-heatmap").innerHTML = cells.join("");
+
+  requestAnimationFrame(() => {
+    const scroll = $("#year-heatmap-scroll");
+    if (scroll && scroll.scrollWidth > scroll.clientWidth) {
+      const yearProgress = (today - yearStart) / Math.max(1, yearEnd - yearStart);
+      scroll.scrollLeft = Math.max(0, yearProgress * scroll.scrollWidth - scroll.clientWidth * 0.72);
+    }
+  });
+}
+
+function getDueMistakes() {
+  const todayKey = localDateKey();
+  return state.mistakeNotes.filter((note) =>
+    !note.reviewComplete && note.nextReviewDate && note.nextReviewDate <= todayKey
+  );
+}
+
+function renderReviewReminder() {
+  const dueCount = getDueMistakes().length;
+  $("#review-reminder-title").textContent = dueCount ? `今日有 ${dueCount} 条错题到期` : "今日无到期复盘";
+  $("#review-reminder-detail").textContent = dueCount
+    ? "只看题源和错误原因，重新动手计算后标记完成"
+    : "新错题将在 1、3、7、14 天后提醒";
+  $("#review-reminder").classList.toggle("due", dueCount > 0);
+  $("#mistake-review-summary").textContent = dueCount ? `${dueCount} 条今日到期` : "按 1·3·7·14 天复盘";
+}
+
 function renderProgress() {
   Object.entries(state.progress).forEach(([key, value]) => {
     const detail = state.progressDetails[key];
@@ -302,9 +403,21 @@ function renderProgress() {
     $(`#${key}-progress-label`).textContent = `${safeValue}%`;
     const basis = $(`#${key}-progress-basis`);
     if (basis) {
-      basis.textContent = hasCalculation
-        ? `已完成 ${completed} / 计划 ${total} ${detail.unit || "项"}`
-        : "历史手动进度，点击铅笔设置计算依据";
+      if (hasCalculation) {
+        const unit = detail.unit || "项";
+        const remaining = Math.max(0, total - completed);
+        const deadline = detail.deadline || state.settings.summerEnd;
+        const daysLeft = inclusiveDaysUntil(deadline);
+        const dailyPace = daysLeft > 0 ? remaining / daysLeft : 0;
+        const deadlineLabel = deadline.slice(5).replace("-", ".");
+        basis.textContent = remaining === 0
+          ? `已完成 ${completed} / ${total} ${unit}，本阶段完成`
+          : daysLeft > 0
+            ? `剩余 ${remaining} ${unit} · 至 ${deadlineLabel} 每天需 ${dailyPace < 10 ? dailyPace.toFixed(1) : Math.ceil(dailyPace)} ${unit}`
+            : `剩余 ${remaining} ${unit} · 已超过 ${deadlineLabel} 截止日`;
+      } else {
+        basis.textContent = "点击铅笔填写完成量、总量和截止日期";
+      }
     }
   });
 }
@@ -657,7 +770,7 @@ function openModuleDialog(moduleKey) {
         `).join("")}
       </div>
       <div class="callout" style="margin-top:16px">
-        计算口径：已完成量 ÷ 本阶段计划总量。专注计时只累计学习时长，不会自动修改科目进度。
+        计算口径：已完成量 ÷ 本阶段计划总量。填写截止日期后，会自动算出剩余内容每天需要完成多少。
       </div>
       <div class="form-grid" style="margin-top:14px">
         <div class="form-field">
@@ -672,6 +785,10 @@ function openModuleDialog(moduleKey) {
           <label for="module-unit-input">单位</label>
           <input id="module-unit-input" type="text" maxlength="12" value="${escapeHtml(detail.unit || "项")}" placeholder="例如：题、讲、篇、章、套">
         </div>
+        <div class="form-field full">
+          <label for="module-deadline-input">本阶段截止日期</label>
+          <input id="module-deadline-input" type="date" value="${escapeHtml(detail.deadline || state.settings.summerEnd)}">
+        </div>
       </div>
       <p class="form-help">当前自动计算进度：<b id="module-progress-value">${current}%</b></p>
     `,
@@ -684,6 +801,7 @@ function openModuleDialog(moduleKey) {
   const completedInput = $("#module-completed-input");
   const totalInput = $("#module-total-input");
   const unitInput = $("#module-unit-input");
+  const deadlineInput = $("#module-deadline-input");
   const calculateProgress = () => {
     const completed = Math.max(0, Number(completedInput.value) || 0);
     const total = Math.max(1, Number(totalInput.value) || 1);
@@ -699,7 +817,8 @@ function openModuleDialog(moduleKey) {
   $("#save-module-button").addEventListener("click", () => {
     const { completed, total, percentage } = calculateProgress();
     const unit = unitInput.value.trim().slice(0, 12) || "项";
-    state.progressDetails[module.key] = { completed, total, unit };
+    const deadline = deadlineInput.value || state.settings.summerEnd;
+    state.progressDetails[module.key] = { completed, total, unit, deadline };
     state.progress[module.key] = percentage;
     saveState();
     closeDialog();
@@ -713,7 +832,7 @@ function openMistakesDialog() {
     kicker: "复盘系统",
     title: "错题标记",
     content: `
-      <div class="callout amber-callout" style="margin-bottom:14px">执行规则：不誊抄整题，只记录题源、错误原因和下一次动作。</div>
+      <div class="callout amber-callout" style="margin-bottom:14px">执行规则：不誊抄整题，只记录题源和错误原因。系统按 1、3、7、14 天提醒重新动手。</div>
       <div class="form-grid">
         <div class="form-field">
           <label for="mistake-subject-input">科目</label>
@@ -752,7 +871,10 @@ function openMistakesDialog() {
       subject: $("#mistake-subject-input").value,
       source,
       reason,
-      date: localDateKey()
+      date: localDateKey(),
+      reviewStep: 0,
+      nextReviewDate: addDays(localDateKey(), REVIEW_INTERVALS[0]),
+      reviewComplete: false
     });
     getDaily().mistakes += 1;
     saveState();
@@ -770,21 +892,58 @@ function renderMistakeNotesHtml() {
   if (!state.mistakeNotes.length) {
     return `<div class="empty-state"><i data-lucide="notebook-tabs"></i><p>还没有错题标记。</p></div>`;
   }
-  return state.mistakeNotes.slice(0, 20).map((note) => `
+  const todayKey = localDateKey();
+  return [...state.mistakeNotes]
+    .sort((a, b) => {
+      if (a.reviewComplete !== b.reviewComplete) return a.reviewComplete ? 1 : -1;
+      return (a.nextReviewDate || "9999-12-31").localeCompare(b.nextReviewDate || "9999-12-31");
+    })
+    .slice(0, 30)
+    .map((note) => {
+      const due = !note.reviewComplete && note.nextReviewDate <= todayKey;
+      const reviewLabel = note.reviewComplete
+        ? "四轮复盘已完成"
+        : due
+          ? `第 ${note.reviewStep + 1} 轮已到期`
+          : `下次 ${note.nextReviewDate.slice(5).replace("-", ".")} · 第 ${note.reviewStep + 1} 轮`;
+      return `
     <div class="mistake-row" data-note-id="${escapeHtml(note.id)}">
-      <span><b>${escapeHtml(note.subject)} · ${escapeHtml(note.source)}</b><small>${escapeHtml(note.reason)} · ${escapeHtml(note.date)}</small></span>
-      <button type="button" class="task-delete" title="删除标记"><i data-lucide="trash-2"></i></button>
+      <span><b>${escapeHtml(note.subject)} · ${escapeHtml(note.source)}</b><small>${escapeHtml(note.reason)} · ${escapeHtml(reviewLabel)}</small></span>
+      <span class="mistake-actions">
+        ${due ? '<button type="button" class="review-done-button"><i data-lucide="check"></i><span>完成复盘</span></button>' : ""}
+        <button type="button" class="task-delete" title="删除标记"><i data-lucide="trash-2"></i></button>
+      </span>
     </div>
-  `).join("");
+  `;
+    }).join("");
 }
 
 function bindMistakeDeleteButtons() {
   $$(".mistake-row").forEach((row) => {
+    $(".review-done-button", row)?.addEventListener("click", () => {
+      const note = state.mistakeNotes.find((item) => item.id === row.dataset.noteId);
+      if (!note) return;
+      const nextStep = note.reviewStep + 1;
+      if (nextStep >= REVIEW_INTERVALS.length) {
+        note.reviewComplete = true;
+        note.nextReviewDate = "";
+      } else {
+        note.reviewStep = nextStep;
+        note.nextReviewDate = addDays(localDateKey(), REVIEW_INTERVALS[nextStep]);
+      }
+      saveState();
+      $("#mistake-note-list").innerHTML = renderMistakeNotesHtml();
+      bindMistakeDeleteButtons();
+      renderReviewReminder();
+      renderIcons();
+      showToast(note.reviewComplete ? "这道错题已完成四轮复盘" : `已安排下一轮复盘：${note.nextReviewDate}`);
+    });
     $(".task-delete", row).addEventListener("click", () => {
       state.mistakeNotes = state.mistakeNotes.filter((note) => note.id !== row.dataset.noteId);
       saveState();
       $("#mistake-note-list").innerHTML = renderMistakeNotesHtml();
       bindMistakeDeleteButtons();
+      renderReviewReminder();
       renderIcons();
     });
   });
