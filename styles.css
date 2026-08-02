@@ -1500,6 +1500,11 @@ footer span {
   gap: 6px;
 }
 
+.app-version {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 footer svg {
   width: 13px;
 }

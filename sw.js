@@ -1,9 +1,10 @@
-const CACHE_NAME = "hdu-0854-workbench-v5";
+const CACHE_NAME = "hdu-0854-workbench-v6";
+const ASSET_VERSION = "20260802.2";
 const CORE_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./app.js",
+  `./styles.css?v=${ASSET_VERSION}`,
+  `./app.js?v=${ASSET_VERSION}`,
   "./manifest.json",
   "./app-icon.svg",
   "./icon-192.png",
@@ -29,6 +30,25 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   if (new URL(event.request.url).origin !== self.location.origin) return;
+
+  const shouldRefresh = event.request.mode === "navigate" ||
+    ["document", "script", "style"].includes(event.request.destination);
+
+  if (shouldRefresh) {
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
+        return response;
+      }).catch(() =>
+        caches.match(event.request).then((cached) => cached || caches.match("./index.html"))
+      )
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) =>
       cached ||
