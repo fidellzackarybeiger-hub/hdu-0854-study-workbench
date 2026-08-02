@@ -81,6 +81,7 @@ let timerRunning = false;
 let timerIsBreak = false;
 let deferredInstallPrompt = null;
 let toastTimer = null;
+let mobilePagesReady = false;
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -1431,7 +1432,62 @@ function importData(file) {
   reader.readAsText(file, "utf-8");
 }
 
+function syncMobilePageNav(pageId) {
+  $$(".mobile-nav [data-mobile-page]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.mobilePage === pageId);
+  });
+}
+
+function navigateToMobilePage(pageId, behavior = "smooth") {
+  const host = $("#mobile-pages");
+  const page = document.getElementById(pageId);
+  if (!host || !page) return false;
+  host.scrollTo({ left: page.offsetLeft, behavior });
+  syncMobilePageNav(pageId);
+  return true;
+}
+
+function setupMobilePages() {
+  if (mobilePagesReady || window.innerWidth > 860) return;
+  const workspace = $(".workspace");
+  const definitions = [
+    { id: "mobile-page-overview", selectors: [".topbar", ".countdown-panel", ".metrics-strip", ".output-strip", ".quick-section"] },
+    { id: "mobile-page-plan", selectors: ["#today-plan"] },
+    { id: "mobile-page-focus", selectors: ["#focus-panel", ".target-panel"] },
+    { id: "mobile-page-summer", selectors: ["#summer-plan"] },
+    { id: "mobile-page-progress", selectors: ["#progress-panel", "footer"] }
+  ];
+  const host = document.createElement("div");
+  host.id = "mobile-pages";
+  host.className = "mobile-pages";
+  definitions.forEach((definition) => {
+    const page = document.createElement("section");
+    page.id = definition.id;
+    page.className = `mobile-page ${definition.id}`;
+    page.setAttribute("aria-label", definition.id.replace("mobile-page-", ""));
+    definition.selectors.forEach((selector) => {
+      const node = $(selector);
+      if (node) page.appendChild(node);
+    });
+    host.appendChild(page);
+  });
+  $(".main-grid")?.remove();
+  workspace.prepend(host);
+  mobilePagesReady = true;
+  let scrollTimer = null;
+  host.addEventListener("scroll", () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      const index = clamp(Math.round(host.scrollLeft / Math.max(1, host.clientWidth)), 0, definitions.length - 1);
+      syncMobilePageNav(definitions[index].id);
+    }, 70);
+  }, { passive: true });
+  syncMobilePageNav(definitions[0].id);
+}
 function bindNavigation() {
+  $$("[data-mobile-page]").forEach((button) => {
+    button.addEventListener("click", () => navigateToMobilePage(button.dataset.mobilePage));
+  });
   $$("[data-scroll]").forEach((button) => {
     button.addEventListener("click", () => {
       const target = document.getElementById(button.dataset.scroll);
@@ -1447,11 +1503,11 @@ function bindQuickActions() {
     button.addEventListener("click", () => {
       const action = button.dataset.action;
       if (action === "plan") {
-        $("#today-plan").scrollIntoView({ behavior: "smooth", block: "start" });
+        if (!navigateToMobilePage("mobile-page-plan")) $("#today-plan").scrollIntoView({ behavior: "smooth", block: "start" });
       } else if (action === "timer") {
-        $("#focus-panel").scrollIntoView({ behavior: "smooth", block: "center" });
+        if (!navigateToMobilePage("mobile-page-focus")) $("#focus-panel").scrollIntoView({ behavior: "smooth", block: "center" });
       } else if (action === "overview") {
-        $("#progress-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+        if (!navigateToMobilePage("mobile-page-progress")) $("#progress-panel").scrollIntoView({ behavior: "smooth", block: "start" });
       } else if (action === "mistakes") {
         openMistakesDialog();
       } else if (action === "scores") {
@@ -1595,6 +1651,7 @@ document.addEventListener("DOMContentLoaded", () => {
   timerTotal = savedFocusMinutes * 60;
   timerRemaining = timerTotal;
   renderAll();
+  setupMobilePages();
   bindEvents();
   updateTimerDisplay();
   registerServiceWorker();

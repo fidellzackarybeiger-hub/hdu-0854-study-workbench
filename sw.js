@@ -1,5 +1,5 @@
-const CACHE_NAME = "hdu-0854-workbench-v7";
-const ASSET_VERSION = "20260802.3";
+const CACHE_NAME = "hdu-0854-workbench-v8";
+const ASSET_VERSION = "20260802.4";
 const CORE_ASSETS = [
   "./",
   "./index.html",
