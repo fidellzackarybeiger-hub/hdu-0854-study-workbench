@@ -654,12 +654,14 @@ function showDialog({ kicker = "工作台", title, content, actions = "" }) {
   $("#dialog-title").textContent = title;
   $("#dialog-content").innerHTML = content;
   $("#dialog-actions").innerHTML = actions;
+  document.documentElement.classList.add("dialog-open");
   $("#app-dialog").showModal();
   renderIcons();
 }
 
 function closeDialog() {
   $("#app-dialog").close();
+  document.documentElement.classList.remove("dialog-open");
 }
 
 function openAddTaskDialog() {
@@ -1451,11 +1453,11 @@ function setupMobilePages() {
   if (mobilePagesReady || window.innerWidth > 860) return;
   const workspace = $(".workspace");
   const definitions = [
-    { id: "mobile-page-overview", selectors: [".topbar", ".countdown-panel", ".metrics-strip", ".output-strip", ".quick-section"] },
-    { id: "mobile-page-plan", selectors: ["#today-plan"] },
-    { id: "mobile-page-focus", selectors: ["#focus-panel", ".target-panel"] },
-    { id: "mobile-page-summer", selectors: ["#summer-plan"] },
-    { id: "mobile-page-progress", selectors: ["#progress-panel", "footer"] }
+    { id: "mobile-page-overview", title: "总览", selectors: [".topbar", ".countdown-panel", ".metrics-strip", ".output-strip", ".quick-section"] },
+    { id: "mobile-page-plan", title: "今日计划", selectors: ["#today-plan"] },
+    { id: "mobile-page-focus", title: "专注计时", selectors: ["#focus-panel", ".target-panel"] },
+    { id: "mobile-page-summer", title: "暑假战役", selectors: ["#summer-plan"] },
+    { id: "mobile-page-progress", title: "进度复盘", selectors: ["#progress-panel", "footer"] }
   ];
   const host = document.createElement("div");
   host.id = "mobile-pages";
@@ -1465,6 +1467,12 @@ function setupMobilePages() {
     page.id = definition.id;
     page.className = `mobile-page ${definition.id}`;
     page.setAttribute("aria-label", definition.id.replace("mobile-page-", ""));
+    if (definition.id !== "mobile-page-overview") {
+      const header = document.createElement("header");
+      header.className = "mobile-page-header";
+      header.innerHTML = `<h2>${definition.title}</h2><button type="button" class="icon-button subtle" data-open-settings aria-label="工作台设置" title="工作台设置"><i data-lucide="settings-2"></i></button>`;
+      page.appendChild(header);
+    }
     definition.selectors.forEach((selector) => {
       const node = $(selector);
       if (node) page.appendChild(node);
@@ -1473,6 +1481,7 @@ function setupMobilePages() {
   });
   $(".main-grid")?.remove();
   workspace.prepend(host);
+  renderIcons();
   mobilePagesReady = true;
   let scrollTimer = null;
   host.addEventListener("scroll", () => {
@@ -1527,6 +1536,7 @@ function bindEvents() {
 
   $("#settings-button").addEventListener("click", openSettingsDialog);
   $("#mobile-settings-button").addEventListener("click", openSettingsDialog);
+  $$('[data-open-settings]').forEach((button) => button.addEventListener("click", openSettingsDialog));
   $("#add-task-button").addEventListener("click", openAddTaskDialog);
   $("#manual-log-button").addEventListener("click", openManualLogDialog);
   $("#weekly-review-button").addEventListener("click", openWeeklyReviewDialog);
@@ -1605,6 +1615,9 @@ function bindEvents() {
 
   $("#app-dialog").addEventListener("click", (event) => {
     if (event.target === $("#app-dialog")) closeDialog();
+  });
+  $("#app-dialog").addEventListener("close", () => {
+    document.documentElement.classList.remove("dialog-open");
   });
 
   window.addEventListener("beforeinstallprompt", (event) => {
