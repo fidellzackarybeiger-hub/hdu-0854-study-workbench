@@ -1,6 +1,6 @@
 const STORAGE_KEY = "hdu0854-workbench-v1";
 const REVIEW_INTERVALS = [1, 3, 7, 14];
-const DATA_VERSION = 3;
+const DATA_VERSION = 4;
 const THEME_COLORS = { blue: "#24313d", graphite: "#24272a", coral: "#332727", teal: "#203033", green: "#1f2923" };
 
 const SUBJECT_META = {
@@ -12,18 +12,17 @@ const SUBJECT_META = {
 };
 
 const DEFAULT_TASKS = [
-  { id: "formula", time: "07:00", subject: "信号与系统", title: "公式晨背", detail: "三大变换性质与常用公式", minutes: 30, priority: "required", eyeLoad: "low", done: false },
-  { id: "calculus", time: "07:35", subject: "数学一", title: "张宇高数强化18讲", detail: "2倍速概念课，例题必须落笔", minutes: 150, priority: "required", eyeLoad: "medium", done: false },
-  { id: "math880", time: "10:15", subject: "数学一", title: "880 基础 + 综合篇", detail: "基础必做，拔高选做，放弃拓展篇", minutes: 110, priority: "required", eyeLoad: "high", done: false },
-  { id: "optional-review", time: "12:15", subject: "复盘", title: "错题二刷 / 额外刷题", detail: "状态良好且必做顺利时再执行", minutes: 60, priority: "optional", eyeLoad: "high", done: false },
-  { id: "eye-noon", time: "13:20", subject: "复盘", title: "午睡前眼部护理", detail: "温敷 + 睑板腺按摩，不计学习时长", minutes: 10, priority: "required", eyeLoad: "low", kind: "care", done: false },
-  { id: "probability", time: "14:00", subject: "数学一", title: "李良概率论", detail: "推进当前章节并完成配套题", minutes: 90, priority: "required", eyeLoad: "high", done: false },
-  { id: "signal", time: "15:40", subject: "信号与系统", title: "三大变换核心攻坚", detail: "课后重点题独立计算", minutes: 150, priority: "required", eyeLoad: "high", done: false },
-  { id: "buffer", time: "18:10", subject: "复盘", title: "机动缓冲", detail: "处理卡壳题或补前一日漏项", minutes: 90, priority: "buffer", eyeLoad: "low", kind: "buffer", done: false },
-  { id: "words", time: "19:40", subject: "英语一", title: "单词二轮滚动", detail: "复习旧词并补充生词", minutes: 60, priority: "required", eyeLoad: "low", done: false },
-  { id: "reading", time: "20:45", subject: "英语一", title: "阅读真题精做", detail: "2010-2020 阅读一刷", minutes: 100, priority: "required", eyeLoad: "high", done: false },
-  { id: "review", time: "22:25", subject: "复盘", title: "固定复盘", detail: "只整理标记、原因与明日动作", minutes: 60, priority: "required", eyeLoad: "medium", done: false },
-  { id: "eye-night", time: "23:30", subject: "复盘", title: "睡前眼部护理", detail: "温敷 + 睑板腺按摩，不计学习时长", minutes: 10, priority: "required", eyeLoad: "low", kind: "care", done: false }
+  { id: "formula", block: "morning", subject: "信号与系统", title: "公式晨背", detail: "三大变换性质与常用公式", minimumMinutes: 20, standardMinutes: 30, priority: "required", topicLevel: "重点大题", eyeLoad: "low", done: false },
+  { id: "calculus", block: "morning", subject: "数学一", title: "高数强化与刷题", detail: "概念课加速听，例题和计算必须落笔", minimumMinutes: 90, standardMinutes: 150, priority: "required", minimumRequired: true, topicLevel: "必拿分", eyeLoad: "medium", done: false },
+  { id: "math880", block: "morning", subject: "数学一", title: "880 基础 + 综合篇", detail: "基础必做，拔高选做，放弃拓展篇", minimumMinutes: 90, standardMinutes: 110, priority: "required", topicLevel: "基础", eyeLoad: "high", done: false },
+  { id: "probability", block: "morning", subject: "数学一", title: "概率论", detail: "推进当前章节并完成配套题", minimumMinutes: 60, standardMinutes: 90, priority: "required", topicLevel: "必拿分", eyeLoad: "high", done: false },
+  { id: "signal", block: "afternoon", subject: "信号与系统", title: "三大变换核心攻坚", detail: "新知识学习后独立完成课后重点题", minimumMinutes: 120, standardMinutes: 150, priority: "required", minimumRequired: true, topicLevel: "重点大题", eyeLoad: "high", done: false },
+  { id: "optional-review", block: "afternoon", subject: "复盘", title: "错题二刷 / 额外刷题", detail: "状态良好且保底任务顺利时再执行", minimumMinutes: 30, standardMinutes: 60, priority: "optional", topicLevel: "进阶", eyeLoad: "high", done: false },
+  { id: "eye-noon", block: "afternoon", subject: "复盘", title: "午睡前眼部护理", detail: "温敷 + 睑板腺按摩，不计学习时长", minimumMinutes: 10, standardMinutes: 10, priority: "required", eyeLoad: "low", kind: "care", done: false },
+  { id: "words", block: "evening", subject: "英语一", title: "单词二轮滚动", detail: "复习旧词并补充生词", minimumMinutes: 40, standardMinutes: 60, priority: "required", minimumRequired: true, topicLevel: "核心优先", eyeLoad: "low", done: false },
+  { id: "reading", block: "evening", subject: "英语一", title: "阅读真题精做", detail: "2010-2020 阅读一刷并记录正确率", minimumMinutes: 70, standardMinutes: 100, priority: "required", topicLevel: "核心优先", eyeLoad: "high", done: false },
+  { id: "review", block: "evening", subject: "复盘", title: "当日复盘", detail: "只整理标记、原因与明日动作", minimumMinutes: 40, standardMinutes: 60, priority: "required", topicLevel: "闭环", eyeLoad: "medium", done: false },
+  { id: "eye-night", block: "evening", subject: "复盘", title: "睡前眼部护理", detail: "温敷 + 睑板腺按摩，不计学习时长", minimumMinutes: 10, standardMinutes: 10, priority: "required", eyeLoad: "low", kind: "care", done: false }
 ];
 
 const DEFAULT_STATE = {
@@ -35,7 +34,8 @@ const DEFAULT_STATE = {
     sprintEnd: "2026-10-20",
     dailyTargetMinutes: 750,
     reviewMinutes: 60,
-    bufferMinutes: 90,
+    bufferMinutes: 15,
+    politicsStartDate: "2026-08-15",
     scoreTotal: 360,
     scoreMath: 120,
     scoreEnglish: 65,
@@ -57,8 +57,8 @@ const DEFAULT_STATE = {
   },
   progressDetails: {},
   stageQuality: {
-    stage1: { value: 0, target: 65, unit: "%" },
-    stage2: { value: 0, target: 70, unit: "%" },
+    stage1: { value: 0, target: 70, unit: "%" },
+    stage2: { value: 0, target: 80, unit: "%" },
     stage3: { value: 0, target: "", unit: "分" }
   },
   ratio: {
@@ -90,18 +90,40 @@ function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function inferTaskBlock(task = {}) {
+  if (["morning", "afternoon", "evening"].includes(task.block)) return task.block;
+  const hour = Number(String(task.time || "19:00").split(":")[0]);
+  if (hour < 13) return "morning";
+  if (hour < 19) return "afternoon";
+  return "evening";
+}
+
 function normalizeTask(task) {
   const preset = DEFAULT_TASKS.find((item) => item.id === task?.id) || {};
+  const standardMinutes = Math.max(5, Number(task?.standardMinutes ?? task?.minutes ?? preset.standardMinutes ?? preset.minimumMinutes) || 60);
+  const minimumMinutes = clamp(Number(task?.minimumMinutes ?? preset.minimumMinutes ?? Math.round(standardMinutes * 0.75)) || 5, 5, standardMinutes);
+  const done = Boolean(task?.done);
   return {
     ...preset,
     ...task,
+    block: inferTaskBlock({ ...preset, ...task }),
+    minimumMinutes,
+    standardMinutes,
+    actualMinutes: Math.max(0, Number(task?.actualMinutes) || (done ? minimumMinutes : 0)),
+    attempted: Math.max(0, Number(task?.attempted) || 0),
+    correct: Math.max(0, Number(task?.correct) || 0),
+    mastery: clamp(Number(task?.mastery) || 0, 0, 100),
+    topicLevel: task?.topicLevel || preset.topicLevel || (task?.priority === "optional" ? "进阶" : "基础"),
+    minimumRequired: Boolean(task?.minimumRequired ?? preset.minimumRequired),
     priority: task?.priority || preset.priority || "required",
     eyeLoad: task?.eyeLoad || preset.eyeLoad || "medium",
-    kind: task?.kind || preset.kind || "study"
+    kind: task?.kind || preset.kind || "study",
+    done
   };
 }
 
 function normalizeDaily(daily = {}) {
+  const sourceTasks = Array.isArray(daily.tasks) ? daily.tasks : DEFAULT_TASKS;
   return {
     studyMinutes: 0,
     words: 0,
@@ -112,11 +134,12 @@ function normalizeDaily(daily = {}) {
     readingTotal: 0,
     readingWrong: 0,
     statusMode: "good",
+    blockBufferUsed: { morning: 0, afternoon: 0, evening: 0 },
     ...daily,
-    tasks: Array.isArray(daily.tasks) ? daily.tasks.map(normalizeTask) : DEFAULT_TASKS.map(normalizeTask)
+    blockBufferUsed: { morning: 0, afternoon: 0, evening: 0, ...(daily.blockBufferUsed || {}) },
+    tasks: sourceTasks.filter((task) => task?.id !== "buffer").map(normalizeTask)
   };
 }
-
 function applyTheme(theme) {
   const safeTheme = THEME_COLORS[theme] ? theme : "blue";
   document.documentElement.dataset.theme = safeTheme;
@@ -137,11 +160,19 @@ function mergeState(saved) {
     Object.entries(saved?.daily || {}).map(([key, value]) => [key, normalizeDaily(value)])
   );
   if (savedVersion < DATA_VERSION && daily[localDateKey()]) {
-    ["optional-review", "eye-noon", "buffer", "eye-night"].forEach((id) => {
+    ["optional-review", "eye-noon", "eye-night"].forEach((id) => {
       if (!daily[localDateKey()].tasks.some((task) => task.id === id)) {
         daily[localDateKey()].tasks.push(normalizeTask(DEFAULT_TASKS.find((task) => task.id === id)));
       }
     });
+  }
+  if (savedVersion < 4) {
+    if (Number(settings.bufferMinutes) === 90) settings.bufferMinutes = 15;
+  }
+  const stageQuality = { ...deepClone(DEFAULT_STATE.stageQuality), ...(saved?.stageQuality || {}) };
+  if (savedVersion < 4) {
+    if (Number(stageQuality.stage1?.target) === 65) stageQuality.stage1.target = 70;
+    if (Number(stageQuality.stage2?.target) === 70) stageQuality.stage2.target = 80;
   }
   return {
     ...deepClone(DEFAULT_STATE),
@@ -150,7 +181,7 @@ function mergeState(saved) {
     settings,
     progress: { ...DEFAULT_STATE.progress, ...(saved?.progress || {}) },
     progressDetails: saved?.progressDetails && typeof saved.progressDetails === "object" ? saved.progressDetails : {},
-    stageQuality: { ...deepClone(DEFAULT_STATE.stageQuality), ...(saved?.stageQuality || {}) },
+    stageQuality,
     ratio: { ...DEFAULT_STATE.ratio, ...(saved?.ratio || {}) },
     daily,
     mistakeNotes: Array.isArray(saved?.mistakeNotes) ? saved.mistakeNotes.map(normalizeMistakeNote) : [],
@@ -161,7 +192,11 @@ function mergeState(saved) {
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return mergeState(saved);
+    const merged = mergeState(saved);
+    if (!saved || Number(saved.version) !== DATA_VERSION) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    }
+    return merged;
   } catch {
     return deepClone(DEFAULT_STATE);
   }
@@ -289,19 +324,65 @@ function getWakeRecommendation() {
 
 function isTaskRecommended(task, status) {
   if (status === "good") return true;
-  if (task.kind === "care" || task.kind === "buffer") return true;
-  if (status === "mild") return task.eyeLoad !== "high";
-  return task.eyeLoad === "low";
+  if (task.kind === "care") return true;
+  if (status === "mild") return task.priority !== "optional" && task.eyeLoad !== "high";
+  return task.eyeLoad === "low" && task.priority !== "optional";
+}
+
+function isTaskComplete(task) {
+  if (task.kind === "care") return Boolean(task.done);
+  return Boolean(task.done) || Number(task.actualMinutes) >= Number(task.minimumMinutes);
+}
+
+function taskAccuracy(task) {
+  const attempted = Math.max(0, Number(task.attempted) || 0);
+  const correct = clamp(Number(task.correct) || 0, 0, attempted);
+  return attempted ? Math.round((correct / attempted) * 100) : null;
+}
+
+function taskExecutionScore(task) {
+  if (task.kind === "care") return task.done ? 100 : 0;
+  const actual = Math.max(0, Number(task.actualMinutes) || 0);
+  const minimum = Math.max(1, Number(task.minimumMinutes) || 1);
+  const standard = Math.max(minimum, Number(task.standardMinutes) || minimum);
+  if (actual <= minimum) return clamp(Math.round((actual / minimum) * 100), 0, 100);
+  if (standard === minimum) return 120;
+  return clamp(Math.round(100 + ((actual - minimum) / (standard - minimum)) * 20), 100, 120);
+}
+function getEffectiveStudyMinutes(daily) {
+  if (!daily) return 0;
+  const taskMinutes = (daily.tasks || []).filter((task) => task.kind === "study").reduce((sum, task) => sum + Math.max(0, Number(task.actualMinutes) || 0), 0);
+  return Math.max(Math.max(0, Number(daily.studyMinutes) || 0), taskMinutes);
+}
+function getPoliticsCountdown() {
+  const startDate = state.settings.politicsStartDate || "2026-08-15";
+  const days = Math.ceil((parseLocalDate(startDate) - startOfToday()) / 86400000);
+  if (days > 0) return { label: `距离政治开始 ${days} 天`, detail: `${startDate.slice(5).replace("-", ".")} 启动，只刷选择题` };
+  if (days === 0) return { label: "政治今天启动", detail: "按计划开始选择题，不挤占数学和专业课" };
+  return { label: `政治已启动 ${Math.abs(days)} 天`, detail: "检查选择题是否持续推进" };
+}
+
+function renderMinimumPlan(daily) {
+  const minimumTasks = daily.tasks.filter((task) => task.minimumRequired && isTaskRecommended(task, daily.statusMode));
+  const done = minimumTasks.filter(isTaskComplete).length;
+  const achieved = minimumTasks.length > 0 && done === minimumTasks.length;
+  $("#minimum-plan").innerHTML = `
+    <div class="minimum-heading"><span><i data-lucide="shield-check"></i><b>今日最低完成</b></span><strong class="${achieved ? "achieved" : ""}">${achieved ? "今日达标" : `${done}/${minimumTasks.length}`}</strong></div>
+    <div class="minimum-items">${minimumTasks.map((task) => `<span class="${isTaskComplete(task) ? "done" : ""}"><i data-lucide="${isTaskComplete(task) ? "check-circle-2" : "circle"}"></i>${escapeHtml(task.title)}</span>`).join("") || "<span>当前状态下只执行恢复任务</span>"}</div>
+  `;
+  const politics = getPoliticsCountdown();
+  $("#politics-reminder").innerHTML = `<i data-lucide="bell-ring"></i><span><b>${escapeHtml(politics.label)}</b><small>${escapeHtml(politics.detail)}</small></span>`;
 }
 
 function renderToday() {
   const daily = getDaily();
   const requiredTasks = daily.tasks.filter((task) =>
-    task.priority === "required" && isTaskRecommended(task, daily.statusMode)
+    task.priority === "required" && task.kind !== "care" && isTaskRecommended(task, daily.statusMode)
   );
-  const completedRequired = requiredTasks.filter((task) => task.done).length;
+  const completedRequired = requiredTasks.filter(isTaskComplete).length;
   const completionRate = requiredTasks.length ? Math.round((completedRequired / requiredTasks.length) * 100) : 100;
-  const studyRate = clamp((daily.studyMinutes / state.settings.dailyTargetMinutes) * 100, 0, 100);
+  const effectiveStudyMinutes = getEffectiveStudyMinutes(daily);
+  const studyRate = clamp((effectiveStudyMinutes / state.settings.dailyTargetMinutes) * 100, 0, 100);
   const readingCorrect = Math.max(0, daily.readingTotal - daily.readingWrong);
   const readingAccuracy = daily.readingTotal ? Math.round((readingCorrect / daily.readingTotal) * 100) : null;
   const blindspots = state.mistakeNotes.filter((note) =>
@@ -311,7 +392,7 @@ function renderToday() {
     Number(state.settings.scoreSignal) + Number(state.settings.scorePolitics);
 
   $("#today-label").textContent = formatDateLabel();
-  $("#study-minutes").textContent = daily.studyMinutes;
+  $("#study-minutes").textContent = effectiveStudyMinutes;
   $("#word-count").textContent = daily.words;
   $("#mistake-count").textContent = daily.mistakes;
   $("#completion-rate").textContent = completionRate;
@@ -319,7 +400,7 @@ function renderToday() {
   $("#completion-progress").style.width = `${completionRate}%`;
   $("#daily-target-label").textContent = formatHours(state.settings.dailyTargetMinutes);
   $("#review-target-label").textContent = formatHours(state.settings.reviewMinutes);
-  $("#buffer-target-label").textContent = formatHours(state.settings.bufferMinutes);
+  $("#buffer-target-label").textContent = `${state.settings.bufferMinutes} 分钟`;
   $("#wake-target-label").textContent = getWakeRecommendation();
   $("#score-total-hero").textContent = `${state.settings.scoreTotal}+`;
   $("#target-score-card").textContent = `${state.settings.scoreTotal}+`;
@@ -329,13 +410,15 @@ function renderToday() {
   $("#output-chapters").textContent = `${daily.chapters} 章`;
   $("#output-reading").textContent = readingAccuracy === null ? "待记录" : `${readingAccuracy}%（错${daily.readingWrong}）`;
   $("#output-blindspots").textContent = `${blindspots} 题`;
+  const hiddenCount = daily.tasks.filter((task) => !isTaskRecommended(task, daily.statusMode)).length;
   const advice = {
-    good: "执行必做主线，选做项量力追加",
-    mild: "优先听课、背词、公式回忆，高用眼任务建议顺延",
-    severe: "只保留护理和低用眼任务，停止硬撑刷题"
+    good: "显示完整计划，先保底再做进阶任务",
+    mild: `已隐藏 ${hiddenCount} 个选做或高用眼任务，优先听课、背词和整理`,
+    severe: `已暂停 ${hiddenCount} 个刷题或长阅读任务，只保留低用眼与恢复任务`
   }[daily.statusMode] || "按完整计划执行";
   $("#status-advice").textContent = advice;
   $$("#status-mode button").forEach((button) => button.classList.toggle("active", button.dataset.status === daily.statusMode));
+  renderMinimumPlan(daily);
   renderTasks();
   renderWeeklyChart();
   renderYearOverview();
@@ -345,55 +428,99 @@ function renderToday() {
   renderBackupReminder();
 }
 
+function renderTaskRow(task, daily) {
+  const meta = SUBJECT_META[task.subject] || SUBJECT_META["复盘"];
+  const completed = isTaskComplete(task);
+  const accuracy = taskAccuracy(task);
+  const priorityLabel = task.kind === "care" ? "护理" : task.minimumRequired ? "保底" : task.priority === "optional" ? "进阶" : "必做";
+  const priorityClass = task.kind === "care" ? "care" : task.priority;
+  const timeContent = task.kind === "care"
+    ? `<span>建议 ${task.minimumMinutes} 分钟，不计学习时长</span>`
+    : `<span>保底 <b>${task.minimumMinutes}</b> 分钟 · 标准 <b>${task.standardMinutes}</b> 分钟 <em class="execution-badge ${taskExecutionScore(task) >= 100 ? "passed" : ""}">完成度 ${taskExecutionScore(task)}%</em></span><label>已投入 <input class="task-actual-input" type="number" min="0" max="720" step="5" inputmode="numeric" value="${Number(task.actualMinutes) || 0}"> 分</label>`;
+  const quality = task.kind === "study" && (accuracy !== null || Number(task.mastery) > 0)
+    ? `<div class="task-quality"><span>知识掌握 <b>${Number(task.mastery) || 0}%</b></span><span>题目正确率 <b>${accuracy === null ? "待录入" : `${accuracy}%`}</b></span></div>`
+    : "";
+  return `
+    <div class="task-row ${completed ? "done" : ""}" data-task-id="${escapeHtml(task.id)}">
+      <label class="task-check"><input type="checkbox" ${completed ? "checked" : ""} aria-label="完成${escapeHtml(task.title)}"><span><i data-lucide="check"></i></span></label>
+      <div class="task-main">
+        <strong>${escapeHtml(task.title)} <em class="priority-tag ${priorityClass}">${priorityLabel}</em><em class="topic-tag">${escapeHtml(task.topicLevel)}</em></strong>
+        <small>${escapeHtml(task.detail)}</small>
+        <div class="task-duration">${timeContent}</div>
+        ${quality}
+      </div>
+      <span class="subject-chip ${meta.className}">${escapeHtml(task.subject)}</span>
+      ${task.kind === "study" ? '<button class="task-assess" aria-label="任务验收" title="记录正确率和掌握度"><i data-lucide="clipboard-check"></i></button>' : ""}
+      <button class="task-delete" aria-label="删除${escapeHtml(task.title)}" title="删除任务"><i data-lucide="trash-2"></i></button>
+    </div>
+  `;
+}
+
 function renderTasks() {
   const daily = getDaily();
   const list = $("#task-list");
-  $("#task-empty").classList.toggle("hidden", daily.tasks.length > 0);
-  list.innerHTML = daily.tasks
-    .sort((a, b) => a.time.localeCompare(b.time))
-    .map((task) => {
-      const meta = SUBJECT_META[task.subject] || SUBJECT_META["复盘"];
-      const recommended = isTaskRecommended(task, daily.statusMode);
-      const priorityLabel = task.kind === "care" ? "护理" : task.priority === "optional" ? "选做" : task.priority === "buffer" ? "机动" : "必做";
-      const priorityClass = task.kind === "care" ? "care" : task.priority;
-      return `
-        <div class="task-row ${task.done ? "done" : ""} ${recommended ? "" : "task-deferred"}" data-task-id="${escapeHtml(task.id)}">
-          <label class="task-check">
-            <input type="checkbox" ${task.done ? "checked" : ""} aria-label="完成${escapeHtml(task.title)}">
-            <span><i data-lucide="check"></i></span>
-          </label>
-          <span class="task-time">${escapeHtml(task.time)}</span>
-          <div class="task-main">
-            <strong>${escapeHtml(task.title)} <em class="priority-tag ${priorityClass}">${priorityLabel}</em></strong>
-            <small>${escapeHtml(task.detail)} · ${Number(task.minutes)}分钟${recommended ? "" : " · 当前状态建议顺延"}</small>
-          </div>
-          <span class="subject-chip ${meta.className}">${escapeHtml(task.subject)}</span>
-          <button class="task-delete" aria-label="删除${escapeHtml(task.title)}" title="删除任务">
-            <i data-lucide="trash-2"></i>
-          </button>
+  const blocks = [
+    { key: "morning", title: "上午学习块", icon: "sunrise" },
+    { key: "afternoon", title: "下午学习块", icon: "sun" },
+    { key: "evening", title: "晚间学习块", icon: "moon" }
+  ];
+  const visibleTasks = daily.tasks.filter((task) => isTaskRecommended(task, daily.statusMode));
+  $("#task-empty").classList.toggle("hidden", visibleTasks.length > 0);
+  const baseBuffer = Math.max(0, Number(state.settings.bufferMinutes) || 15);
+  let carried = 0;
+  list.innerHTML = blocks.map((block) => {
+    const tasks = visibleTasks.filter((task) => task.block === block.key);
+    const required = tasks.filter((task) => task.priority === "required" && task.kind !== "care");
+    const unfinished = required.filter((task) => !isTaskComplete(task)).length;
+    const minimumTotal = tasks.filter((task) => task.kind === "study").reduce((sum, task) => sum + Number(task.minimumMinutes), 0);
+    const standardTotal = tasks.filter((task) => task.kind === "study").reduce((sum, task) => sum + Number(task.standardMinutes), 0);
+    const available = block.key === "evening" ? baseBuffer + carried : baseBuffer;
+    const used = clamp(Number(daily.blockBufferUsed[block.key]) || 0, 0, available);
+    const result = `
+      <section class="study-block ${unfinished === 0 && required.length ? "block-done" : ""}" data-block="${block.key}">
+        <div class="study-block-heading">
+          <span class="block-title"><i data-lucide="${block.icon}"></i><span><b>${block.title}</b><small>${unfinished} 个必做未完成 · 保底 ${minimumTotal} 分 / 标准 ${standardTotal} 分</small></span></span>
+          <strong>${unfinished === 0 && required.length ? "已完成" : `${tasks.length} 项`}</strong>
         </div>
-      `;
-    })
-    .join("");
+        <div class="block-task-list">${tasks.map((task) => renderTaskRow(task, daily)).join("") || '<div class="block-empty">当前状态下本时段无执行任务</div>'}</div>
+        <div class="block-buffer"><span><i data-lucide="clock-3"></i><b>缓冲 ${available} 分钟</b><small>${carried ? `含前序累计 ${carried} 分钟` : "用于延迟补偿、休息或临时事务"}</small></span><label>已用 <input class="buffer-used-input" type="number" min="0" max="${available}" step="5" inputmode="numeric" value="${used}"> 分</label></div>
+      </section>`;
+    if (block.key !== "evening") carried += Math.max(0, baseBuffer - used);
+    return result;
+  }).join("");
 
   $$(".task-row", list).forEach((row) => {
     const id = row.dataset.taskId;
-    $("input", row).addEventListener("change", (event) => {
+    const checkbox = $(".task-check input", row);
+    checkbox.addEventListener("change", (event) => {
       const task = getDaily().tasks.find((item) => item.id === id);
       if (!task) return;
       task.done = event.target.checked;
-      saveState();
-      renderToday();
-      renderIcons();
+      if (task.kind !== "care") task.actualMinutes = event.target.checked ? Math.max(task.actualMinutes, task.minimumMinutes) : 0;
+      saveState(); renderToday(); renderIcons();
     });
+    const actualInput = $(".task-actual-input", row);
+    actualInput?.addEventListener("change", () => {
+      const task = getDaily().tasks.find((item) => item.id === id);
+      if (!task) return;
+      task.actualMinutes = clamp(Number(actualInput.value) || 0, 0, 720);
+      task.done = task.actualMinutes >= task.minimumMinutes;
+      saveState(); renderToday(); renderIcons();
+    });
+    $(".task-assess", row)?.addEventListener("click", () => openTaskAssessmentDialog(id));
     $(".task-delete", row).addEventListener("click", () => {
       const task = getDaily().tasks.find((item) => item.id === id);
       if (!task || !confirm(`删除任务“${task.title}”？`)) return;
       getDaily().tasks = getDaily().tasks.filter((item) => item.id !== id);
-      saveState();
-      renderToday();
-      renderIcons();
-      showToast("任务已删除");
+      saveState(); renderToday(); renderIcons(); showToast("任务已删除");
+    });
+  });
+  $$(".study-block", list).forEach((block) => {
+    $(".buffer-used-input", block).addEventListener("change", (event) => {
+      const key = block.dataset.block;
+      const max = Number(event.target.max) || 15;
+      getDaily().blockBufferUsed[key] = clamp(Number(event.target.value) || 0, 0, max);
+      saveState(); renderTasks();
     });
   });
   renderIcons();
@@ -408,7 +535,7 @@ function renderWeeklyChart() {
     const date = new Date(today);
     date.setDate(today.getDate() - offset);
     const key = localDateKey(date);
-    const minutes = state.daily[key]?.studyMinutes || 0;
+    const minutes = getEffectiveStudyMinutes(state.daily[key]);
     total += minutes;
     days.push({
       key,
@@ -452,7 +579,7 @@ function renderYearOverview() {
 
   Object.entries(state.daily).forEach(([key, daily]) => {
     if (!key.startsWith(`${year}-`)) return;
-    const minutes = Math.max(0, Number(daily?.studyMinutes) || 0);
+    const minutes = getEffectiveStudyMinutes(daily);
     totalMinutes += minutes;
     if (key.startsWith(monthPrefix)) monthMinutes += minutes;
     if (minutes > 0) studyDays += 1;
@@ -461,7 +588,7 @@ function renderYearOverview() {
 
   let streak = 0;
   const cursor = new Date(today);
-  while ((state.daily[localDateKey(cursor)]?.studyMinutes || 0) > 0) {
+  while (getEffectiveStudyMinutes(state.daily[localDateKey(cursor)]) > 0) {
     streak += 1;
     cursor.setDate(cursor.getDate() - 1);
   }
@@ -479,7 +606,7 @@ function renderYearOverview() {
   }
   for (const date = new Date(yearStart); date <= yearEnd; date.setDate(date.getDate() + 1)) {
     const key = localDateKey(date);
-    const minutes = Math.max(0, Number(state.daily[key]?.studyMinutes) || 0);
+    const minutes = getEffectiveStudyMinutes(state.daily[key]);
     const ratio = minutes / target;
     const level = minutes === 0 ? 0 : ratio < 0.25 ? 1 : ratio < 0.5 ? 2 : ratio < 0.75 ? 3 : 4;
     const future = date > today ? " future" : "";
@@ -509,7 +636,7 @@ function renderTargetTrend() {
     for (let day = 0; day < 7; day += 1) {
       const date = new Date(start);
       date.setDate(start.getDate() + day);
-      if (date <= today && (state.daily[localDateKey(date)]?.studyMinutes || 0) >= state.settings.dailyTargetMinutes) hitDays += 1;
+      if (date <= today && getEffectiveStudyMinutes(state.daily[localDateKey(date)]) >= state.settings.dailyTargetMinutes) hitDays += 1;
     }
     weeks.push({ label: `${start.getMonth() + 1}.${start.getDate()}`, hitDays });
   }
@@ -565,7 +692,6 @@ function renderProgress() {
     const attempted = Math.max(0, Number(detail?.attempted) || 0);
     const correct = Math.max(0, Number(detail?.correct) || 0);
     const quality = attempted ? clamp(Math.round((correct / attempted) * 100), 0, 100) : 0;
-
     state.progress[key] = safeValue;
     $(`#${key}-progress`).style.width = `${safeValue}%`;
     $(`#${key}-progress-label`).textContent = `${safeValue}%`;
@@ -587,16 +713,17 @@ function renderProgress() {
         basis.textContent = "点击铅笔填写完成量、总量和截止日期";
       }
     }
+    const mastery = clamp(Number(detail?.mastery) || 0, 0, 100);
     const row = $(`#${key}-progress`).closest(".subject-progress-row");
     let qualityWrap = $(".subject-quality", row);
     if (!qualityWrap) {
       qualityWrap = document.createElement("div");
       qualityWrap.className = "subject-quality";
-      qualityWrap.innerHTML = `<div><span>质量完成度</span><b id="${key}-quality-label"></b></div><div class="subject-track quality"><i id="${key}-quality"></i></div>`;
       row.insertBefore(qualityWrap, $("small", row));
     }
-    $(`#${key}-quality`).style.width = `${quality}%`;
-    $(`#${key}-quality-label`).textContent = attempted ? `${quality}%（${correct}/${attempted}）` : "待录入";
+    qualityWrap.innerHTML = `
+      <div><span>知识点掌握度</span><b>${mastery ? `${mastery}%` : "待录入"}</b></div><div class="subject-track quality"><i style="width:${mastery}%"></i></div>
+      <div class="subject-quality-second"><span>做题正确率</span><b>${attempted ? `${quality}%（${correct}/${attempted}）` : "待录入"}</b></div><div class="subject-track quality"><i style="width:${quality}%"></i></div>`;
   });
 }
 function updateSummerPhase() {
@@ -666,76 +793,88 @@ function closeDialog() {
 
 function openAddTaskDialog() {
   showDialog({
-    kicker: "今日执行",
-    title: "新增学习任务",
+    kicker: "弹性计划",
+    title: "新增任务块",
     content: `
       <div class="form-grid">
-        <div class="form-field">
-          <label for="task-time-input">开始时间</label>
-          <input id="task-time-input" type="time" value="14:00">
-        </div>
-        <div class="form-field">
-          <label for="task-minutes-input">计划分钟</label>
-          <input id="task-minutes-input" type="number" min="5" max="360" step="5" value="60">
-        </div>
-        <div class="form-field full">
-          <label for="task-subject-input">科目</label>
-          <select id="task-subject-input">
-            ${Object.keys(SUBJECT_META).map((subject) => `<option>${subject}</option>`).join("")}
-          </select>
-        </div>
-        <div class="form-field">
-          <label for="task-priority-input">任务级别</label>
-          <select id="task-priority-input"><option value="required">必做项</option><option value="optional">选做项</option><option value="buffer">机动缓冲</option></select>
-        </div>
-        <div class="form-field">
-          <label for="task-eye-input">用眼强度</label>
-          <select id="task-eye-input"><option value="high">高：纸笔刷题/精读</option><option value="medium">中：听课+笔记</option><option value="low">低：听课/背词/回忆</option></select>
-        </div>
-        <div class="form-field full">
-          <label for="task-title-input">任务名称</label>
-          <input id="task-title-input" type="text" maxlength="40" placeholder="例如：880 综合篇第3章">
-        </div>
-        <div class="form-field full">
-          <label for="task-detail-input">执行标准</label>
-          <input id="task-detail-input" type="text" maxlength="80" placeholder="例如：做20题，错题只标记">
-        </div>
+        <div class="form-field"><label for="task-block-input">学习时段</label><select id="task-block-input"><option value="morning">上午学习块</option><option value="afternoon">下午学习块</option><option value="evening">晚间学习块</option></select></div>
+        <div class="form-field"><label for="task-subject-input">科目</label><select id="task-subject-input">${Object.keys(SUBJECT_META).map((subject) => `<option>${subject}</option>`).join("")}</select></div>
+        <div class="form-field"><label for="task-minimum-input">保底分钟</label><input id="task-minimum-input" type="number" min="5" max="360" step="5" value="60"></div>
+        <div class="form-field"><label for="task-standard-input">标准分钟</label><input id="task-standard-input" type="number" min="5" max="480" step="5" value="90"></div>
+        <div class="form-field"><label for="task-priority-input">任务级别</label><select id="task-priority-input"><option value="required">必做项</option><option value="optional">进阶任务</option></select></div>
+        <div class="form-field"><label for="task-minimum-required-input">今日保底清单</label><select id="task-minimum-required-input"><option value="false">普通任务</option><option value="true">加入今日最低完成</option></select></div>
+        <div class="form-field"><label for="task-eye-input">用眼强度</label><select id="task-eye-input"><option value="high">高：纸笔刷题/精读</option><option value="medium">中：听课+笔记</option><option value="low">低：听课/背词/回忆</option></select></div>
+        <div class="form-field"><label for="task-topic-input">考点标签</label><select id="task-topic-input"><option>必拿分</option><option>基础</option><option>拔高</option><option>低频</option><option>重点大题</option><option>高频小题</option><option>核心优先</option><option>进阶</option></select></div>
+        <div class="form-field full"><label for="task-title-input">任务名称</label><input id="task-title-input" type="text" maxlength="40" placeholder="例如：高数第一章刷题"></div>
+        <div class="form-field full"><label for="task-detail-input">执行标准</label><input id="task-detail-input" type="text" maxlength="80" placeholder="例如：完成20题并记录正确率"></div>
       </div>
+      <p class="form-help">达到保底分钟后任务自动完成；超过标准分钟会计入超额完成度。任务不绑定具体开始时间。</p>
     `,
-    actions: `
-      <button type="button" class="secondary-button" data-dialog-close>取消</button>
-      <button type="button" class="primary-button" id="save-task-button">添加任务</button>
-    `
+    actions: `<button type="button" class="secondary-button" data-dialog-close>取消</button><button type="button" class="primary-button" id="save-task-button">添加任务</button>`
   });
-
   $("[data-dialog-close]").addEventListener("click", closeDialog);
   $("#save-task-button").addEventListener("click", () => {
     const title = $("#task-title-input").value.trim();
     const detail = $("#task-detail-input").value.trim();
-    const minutes = clamp(Number($("#task-minutes-input").value) || 0, 5, 360);
-    if (!title) {
-      showToast("请填写任务名称");
-      return;
-    }
-    getDaily().tasks.push({
+    const minimumMinutes = clamp(Number($("#task-minimum-input").value) || 0, 5, 360);
+    const standardMinutes = clamp(Number($("#task-standard-input").value) || 0, minimumMinutes, 480);
+    if (!title) { showToast("请填写任务名称"); return; }
+    getDaily().tasks.push(normalizeTask({
       id: `task-${Date.now()}`,
-      time: $("#task-time-input").value || "14:00",
+      block: $("#task-block-input").value,
       subject: $("#task-subject-input").value,
       title,
-      detail: detail || "按计划完成并记录结果",
-      minutes,
+      detail: detail || "达到保底时间并记录验收结果",
+      minimumMinutes,
+      standardMinutes,
+      actualMinutes: 0,
       priority: $("#task-priority-input").value,
+      minimumRequired: $("#task-minimum-required-input").value === "true",
+      topicLevel: $("#task-topic-input").value,
       eyeLoad: $("#task-eye-input").value,
-      kind: $("#task-priority-input").value === "buffer" ? "buffer" : "study",
+      kind: "study",
       done: false
-    });
-    saveState();
-    closeDialog();
-    renderToday();
-    showToast("任务已添加到今日计划");
+    }));
+    saveState(); closeDialog(); renderToday(); showToast("任务已加入弹性学习块");
   });
 }
 
+function openTaskAssessmentDialog(taskId) {
+  const task = getDaily().tasks.find((item) => item.id === taskId);
+  if (!task) return;
+  const accuracy = taskAccuracy(task);
+  showDialog({
+    kicker: "任务验收",
+    title: task.title,
+    content: `
+      <div class="assessment-summary"><span>保底 <b>${task.minimumMinutes} 分</b></span><span>标准 <b>${task.standardMinutes} 分</b></span><span>已投入 <b>${task.actualMinutes || 0} 分</b></span></div>
+      <div class="form-grid">
+        <div class="form-field"><label for="assessment-attempted">完成题数</label><input id="assessment-attempted" type="number" min="0" step="1" value="${task.attempted || 0}"></div>
+        <div class="form-field"><label for="assessment-correct">正确题数</label><input id="assessment-correct" type="number" min="0" step="1" value="${task.correct || 0}"></div>
+        <div class="form-field full"><label for="assessment-mastery">知识点掌握度：<b id="assessment-mastery-value">${task.mastery || 0}%</b></label><input id="assessment-mastery" type="range" min="0" max="100" step="5" value="${task.mastery || 0}"></div>
+      </div>
+      <div class="quality-preview"><span>知识掌握 <b id="preview-mastery">${task.mastery || 0}%</b></span><span>题目正确率 <b id="preview-accuracy">${accuracy === null ? "待录入" : `${accuracy}%`}</b></span></div>
+      <p class="form-help">正确率 = 正确题数 ÷ 完成题数。知识掌握度与做题正确率分开记录，不再合并成一个质量分。</p>
+    `,
+    actions: `<button type="button" class="secondary-button" data-dialog-close>取消</button><button type="button" class="primary-button" id="save-assessment">保存验收</button>`
+  });
+  const update = () => {
+    const attempted = Math.max(0, Number($("#assessment-attempted").value) || 0);
+    const correct = clamp(Number($("#assessment-correct").value) || 0, 0, attempted);
+    const mastery = clamp(Number($("#assessment-mastery").value) || 0, 0, 100);
+    $("#assessment-correct").max = attempted;
+    $("#assessment-mastery-value").textContent = `${mastery}%`;
+    $("#preview-mastery").textContent = `${mastery}%`;
+    $("#preview-accuracy").textContent = attempted ? `${Math.round((correct / attempted) * 100)}%` : "待录入";
+    return { attempted, correct, mastery };
+  };
+  [$("#assessment-attempted"), $("#assessment-correct"), $("#assessment-mastery")].forEach((input) => input.addEventListener("input", update));
+  $("[data-dialog-close]").addEventListener("click", closeDialog);
+  $("#save-assessment").addEventListener("click", () => {
+    Object.assign(task, update());
+    saveState(); closeDialog(); renderToday(); showToast("任务正确率和掌握度已保存");
+  });
+}
 function openSettingsDialog() {
   const s = state.settings;
   const scoreSum = Number(s.scoreMath) + Number(s.scoreEnglish) + Number(s.scoreSignal) + Number(s.scorePolitics);
@@ -767,7 +906,8 @@ function openSettingsDialog() {
         <div class="form-grid">
           <div class="form-field"><label for="setting-daily">净学习分钟</label><input id="setting-daily" type="number" min="60" max="1000" step="10" value="${s.dailyTargetMinutes}"></div>
           <div class="form-field"><label for="setting-review">固定复盘分钟</label><input id="setting-review" type="number" min="10" max="180" step="10" value="${s.reviewMinutes}"></div>
-          <div class="form-field"><label for="setting-buffer">机动缓冲分钟</label><input id="setting-buffer" type="number" min="0" max="240" step="10" value="${s.bufferMinutes}"></div>
+          <div class="form-field"><label for="setting-buffer">每个学习块缓冲分钟</label><input id="setting-buffer" type="number" min="0" max="60" step="5" value="${s.bufferMinutes}"></div>
+          <div class="form-field"><label for="setting-politics-start">政治启动日期</label><input id="setting-politics-start" type="date" value="${escapeHtml(s.politicsStartDate || "2026-08-15")}"></div>
         </div>
       </div>
       <div class="dialog-section">
@@ -825,7 +965,8 @@ function openSettingsDialog() {
       sprintEnd: $("#setting-sprint").value,
       dailyTargetMinutes: clamp(Number($("#setting-daily").value), 60, 1000),
       reviewMinutes: clamp(Number($("#setting-review").value), 10, 180),
-      bufferMinutes: clamp(Number($("#setting-buffer").value), 0, 240),
+      bufferMinutes: clamp(Number($("#setting-buffer").value), 0, 60),
+      politicsStartDate: $("#setting-politics-start").value || "2026-08-15",
       wakeStartDate: $("#wake-start-date").value || localDateKey(),
       wakeTransitionDays: clamp(Number($("#wake-days").value), 1, 30),
       wakeCurrent: $("#wake-current").value || "08:00",
@@ -974,7 +1115,7 @@ function openModuleDialog(moduleKey) {
   const module = MODULES[moduleKey];
   const current = clamp(Number(state.progress[module.key]) || 0, 0, 100);
   const savedDetail = state.progressDetails[module.key];
-  const detail = savedDetail || { completed: current, total: 100, unit: "计划点", correct: 0, attempted: 0 };
+  const detail = savedDetail || { completed: current, total: 100, unit: "计划点", correct: 0, attempted: 0, mastery: 0 };
   const politicsCallout = moduleKey === "politics"
     ? `<div class="callout amber-callout" style="margin-bottom:12px">政治按计划在 8 月中旬启动。现在无需用大块时间提前挤占数学和专业课。</div>`
     : "";
@@ -1005,8 +1146,9 @@ function openModuleDialog(moduleKey) {
         <div class="form-field"><label for="module-deadline-input">本阶段截止日期</label><input id="module-deadline-input" type="date" value="${escapeHtml(detail.deadline || state.settings.summerEnd)}"></div>
         <div class="form-field"><label for="module-correct-input">${qualityLabel.split(" / ")[0]}</label><input id="module-correct-input" type="number" min="0" step="1" value="${escapeHtml(detail.correct || 0)}"></div>
         <div class="form-field"><label for="module-attempted-input">${qualityLabel.split(" / ")[1]}</label><input id="module-attempted-input" type="number" min="0" step="1" value="${escapeHtml(detail.attempted || 0)}"></div>
+        <div class="form-field full"><label for="module-mastery-input">知识点掌握度：<b id="module-mastery-label">${escapeHtml(detail.mastery || 0)}%</b></label><input id="module-mastery-input" type="range" min="0" max="100" step="5" value="${escapeHtml(detail.mastery || 0)}"></div>
       </div>
-      <p class="form-help">内容进度：<b id="module-progress-value">${current}%</b>　质量完成度：<b id="module-quality-value">${detail.quality || 0}%</b></p>
+      <p class="form-help">内容进度：<b id="module-progress-value">${current}%</b>　做题正确率：<b id="module-quality-value">${detail.quality || 0}%</b></p>
     `,
     actions: `
       <button type="button" class="secondary-button" data-dialog-close>取消</button>
@@ -1018,6 +1160,7 @@ function openModuleDialog(moduleKey) {
   const totalInput = $("#module-total-input");
   const correctInput = $("#module-correct-input");
   const attemptedInput = $("#module-attempted-input");
+  const masteryInput = $("#module-mastery-input");
   const calculateProgress = () => {
     const completed = Math.max(0, Number(completedInput.value) || 0);
     const total = Math.max(1, Number(totalInput.value) || 1);
@@ -1025,11 +1168,13 @@ function openModuleDialog(moduleKey) {
     const attempted = Math.max(0, Number(attemptedInput.value) || 0);
     const percentage = clamp(Math.round((completed / total) * 100), 0, 100);
     const quality = attempted ? clamp(Math.round((correct / attempted) * 100), 0, 100) : 0;
+    const mastery = clamp(Number(masteryInput.value) || 0, 0, 100);
     $("#module-progress-value").textContent = `${percentage}%（${completed} ÷ ${total}）`;
     $("#module-quality-value").textContent = attempted ? `${quality}%（${correct} ÷ ${attempted}）` : "待录入";
-    return { completed, total, percentage, correct, attempted, quality };
+    $("#module-mastery-label").textContent = `${mastery}%`;
+    return { completed, total, percentage, correct, attempted, quality, mastery };
   };
-  [completedInput, totalInput, correctInput, attemptedInput].forEach((input) => input.addEventListener("input", calculateProgress));
+  [completedInput, totalInput, correctInput, attemptedInput, masteryInput].forEach((input) => input.addEventListener("input", calculateProgress));
   calculateProgress();
   $("[data-dialog-close]").addEventListener("click", closeDialog);
   $("#save-module-button").addEventListener("click", () => {
@@ -1052,6 +1197,7 @@ function openMistakesDialog() {
     title: "错题分类复盘",
     content: `
       <div class="callout amber-callout" style="margin-bottom:14px">不誊抄整题，只记录题源、错误类型和下次动作。知识盲区与思路不会优先显示。</div>
+      <div class="mistake-treatment"><span><b>计算失误</b>重新计算一次，记录错误原因</span><span><b>知识点盲区</b>重学知识点，再做对应例题</span><span><b>思路不会</b>整理标准步骤，记录解题模板</span></div>
       <div class="form-grid">
         <div class="form-field"><label for="mistake-subject-input">科目</label><select id="mistake-subject-input"><option>数学一</option><option>信号与系统</option><option>英语一</option><option>政治</option></select></div>
         <div class="form-field"><label for="mistake-category-input">错误类型</label><select id="mistake-category-input"><option value="calculation">计算失误</option><option value="knowledge">知识点盲区</option><option value="thinking">思路不会</option></select></div>
@@ -1177,8 +1323,8 @@ function openStageQualityDialog() {
   $("[data-dialog-close]").addEventListener("click", closeDialog);
   $("#save-stage-quality").addEventListener("click", () => {
     state.stageQuality = {
-      stage1: { value: clamp(Number($("#stage1-value").value) || 0, 0, 100), target: clamp(Number($("#stage1-target").value) || 65, 1, 100), unit: "%" },
-      stage2: { value: clamp(Number($("#stage2-value").value) || 0, 0, 100), target: clamp(Number($("#stage2-target").value) || 70, 1, 100), unit: "%" },
+      stage1: { value: clamp(Number($("#stage1-value").value) || 0, 0, 100), target: clamp(Number($("#stage1-target").value) || 70, 1, 100), unit: "%" },
+      stage2: { value: clamp(Number($("#stage2-value").value) || 0, 0, 100), target: clamp(Number($("#stage2-target").value) || 80, 1, 100), unit: "%" },
       stage3: { value: Math.max(0, Number($("#stage3-value").value) || 0), target: $("#stage3-target").value ? Math.max(1, Number($("#stage3-target").value)) : "", unit: "分" }
     };
     saveState();
@@ -1201,6 +1347,7 @@ function getWeekDates() {
 
 function buildWeeklySummary() {
   const dates = getWeekDates().filter((date) => date <= startOfToday());
+  const dateKeys = new Set(dates.map(localDateKey));
   const subjectStats = {};
   let requiredTotal = 0;
   let requiredDone = 0;
@@ -1213,34 +1360,40 @@ function buildWeeklySummary() {
   dates.forEach((date) => {
     const daily = state.daily[localDateKey(date)];
     if (!daily) return;
-    studyMinutes += Number(daily.studyMinutes) || 0;
+    studyMinutes += getEffectiveStudyMinutes(daily);
     problems += (Number(daily.mathProblems) || 0) + (Number(daily.signalProblems) || 0);
     chapters += Number(daily.chapters) || 0;
     readingTotal += Number(daily.readingTotal) || 0;
     readingWrong += Number(daily.readingWrong) || 0;
     if (daily.statusMode !== "good") discomfortDays += 1;
     daily.tasks.forEach((task) => {
-      if (task.kind === "care" || task.kind === "buffer" || task.priority !== "required") return;
+      if (task.kind === "care" || task.priority !== "required") return;
       requiredTotal += 1;
-      if (task.done) requiredDone += 1;
+      if (isTaskComplete(task)) requiredDone += 1;
       if (!subjectStats[task.subject]) subjectStats[task.subject] = { total: 0, done: 0 };
       subjectStats[task.subject].total += 1;
-      if (task.done) subjectStats[task.subject].done += 1;
+      if (isTaskComplete(task)) subjectStats[task.subject].done += 1;
     });
   });
   const completion = requiredTotal ? Math.round((requiredDone / requiredTotal) * 100) : 0;
-  const subjectRows = Object.entries(subjectStats).map(([subject, value]) => ({
-    subject,
-    completion: value.total ? Math.round((value.done / value.total) * 100) : 0
-  })).sort((a, b) => a.completion - b.completion);
+  const subjectRows = Object.entries(subjectStats).map(([subject, value]) => ({ subject, completion: value.total ? Math.round((value.done / value.total) * 100) : 0 })).sort((a, b) => a.completion - b.completion);
   const lagging = subjectRows[0];
   const readingAccuracy = readingTotal ? Math.round(((readingTotal - readingWrong) / readingTotal) * 100) : null;
+  const weeklyMistakes = state.mistakeNotes.filter((note) => dateKeys.has(note.date));
+  const mistakeCounts = { calculation: 0, knowledge: 0, thinking: 0 };
+  weeklyMistakes.forEach((note) => { if (mistakeCounts[note.category] !== undefined) mistakeCounts[note.category] += 1; });
+  const mistakeTotal = weeklyMistakes.length;
+  const mistakeBreakdown = Object.fromEntries(Object.entries(mistakeCounts).map(([key, value]) => [key, mistakeTotal ? Math.round((value / mistakeTotal) * 100) : 0]));
+  const problem = lagging ? `${lagging.subject}完成率最低（${lagging.completion}%）` : "本周数据不足，先保持保底任务连续记录";
+  const reason = lagging && lagging.completion < 70 ? "该科保底任务投入不足或任务量超过当天承载" : discomfortDays >= 2 ? "身体不适天数较多，高用眼任务被主动顺延" : "主线基本稳定，需要继续积累正确率数据";
   const suggestions = [];
-  if (completion < 70) suggestions.push("下周先删除选做项，必做主线控制在可完成范围内。");
-  if (lagging && lagging.completion < completion) suggestions.push(`${lagging.subject}完成率最低，优先补核心任务，不用额外加量。`);
-  if (discomfortDays >= 2) suggestions.push("本周眼部不适较多，下周减少连续高用眼时段，保留两次护理节点。");
-  if (!suggestions.length) suggestions.push("本周主线稳定，下周保持结构，只小幅增加质量验收题。 ");
-  return { dates, completion, studyMinutes, problems, chapters, readingAccuracy, subjectRows, lagging, suggestions };
+  if (completion < 70) suggestions.push("下周先隐藏进阶任务，缩小必做范围直到保底完成率恢复。 ");
+  if (lagging) suggestions.push(`${lagging.subject}每天增加 30 分钟保底投入，优先安排在对应学习块前部。`);
+  if (mistakeBreakdown.knowledge >= 50) suggestions.push("知识盲区占比最高，先回看知识点和例题，再进行同类题复测。 ");
+  if (mistakeBreakdown.thinking >= 40) suggestions.push("思路问题偏多，下周为高频题型整理标准解题步骤和模板。 ");
+  if (discomfortDays >= 2) suggestions.push("本周不适天数较多，下周减少连续高用眼时段并保留两次护理。 ");
+  if (!suggestions.length) suggestions.push("本周主线稳定，下周保持结构，只小幅提高章节正确率门槛。 ");
+  return { dates, completion, studyMinutes, problems, chapters, readingAccuracy, subjectRows, lagging, mistakeBreakdown, mistakeTotal, problem, reason, suggestions };
 }
 
 function openWeeklyReviewDialog() {
@@ -1249,30 +1402,25 @@ function openWeeklyReviewDialog() {
   const savedNote = state.weeklyReviews[mondayKey]?.nextFocus || "";
   showDialog({
     kicker: startOfToday().getDay() === 0 ? "周日固定复盘" : "本周实时预览",
-    title: "周度复盘",
+    title: "3分钟周度复盘",
     content: `
       <div class="weekly-summary-grid">
-        <div><span>必做完成率</span><strong>${summary.completion}%</strong></div>
-        <div><span>净学习时长</span><strong>${formatCompactHours(summary.studyMinutes)}</strong></div>
-        <div><span>核心做题</span><strong>${summary.problems} 题</strong></div>
-        <div><span>推进章节</span><strong>${summary.chapters} 章</strong></div>
-        <div><span>阅读正确率</span><strong>${summary.readingAccuracy === null ? "待记录" : `${summary.readingAccuracy}%`}</strong></div>
+        <div><span>必做完成率</span><strong>${summary.completion}%</strong></div><div><span>净学习时长</span><strong>${formatCompactHours(summary.studyMinutes)}</strong></div><div><span>核心做题</span><strong>${summary.problems} 题</strong></div><div><span>推进章节</span><strong>${summary.chapters} 章</strong></div><div><span>阅读正确率</span><strong>${summary.readingAccuracy === null ? "待记录" : `${summary.readingAccuracy}%`}</strong></div>
       </div>
       <div class="dialog-section"><h3>各科必做完成率</h3><div class="score-list">${summary.subjectRows.map((row) => `<div class="score-row"><span>${escapeHtml(row.subject)}</span><strong>${row.completion}%</strong></div>`).join("") || '<div class="empty-state"><p>本周还没有任务记录。</p></div>'}</div></div>
-      <div class="dialog-section"><h3>下周调整建议</h3><div class="callout amber-callout">${summary.suggestions.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}</div></div>
-      <div class="form-field"><label for="weekly-next-focus">下周唯一核心调整</label><input id="weekly-next-focus" type="text" maxlength="100" value="${escapeHtml(savedNote)}" placeholder="例如：数学必做减到每天两块，保证专业课不断档"></div>
+      <div class="dialog-section"><h3>本周错题分析（${summary.mistakeTotal} 条）</h3><div class="mistake-breakdown"><span>计算失误 <b>${summary.mistakeBreakdown.calculation}%</b></span><span>知识盲区 <b>${summary.mistakeBreakdown.knowledge}%</b></span><span>思路问题 <b>${summary.mistakeBreakdown.thinking}%</b></span></div></div>
+      <div class="dialog-section"><h3>系统诊断</h3><div class="weekly-diagnosis"><p><b>本周问题</b>${escapeHtml(summary.problem)}</p><p><b>可能原因</b>${escapeHtml(summary.reason)}</p></div></div>
+      <div class="dialog-section"><h3>下周自动调整建议</h3><div class="callout amber-callout">${summary.suggestions.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}</div></div>
+      <div class="form-field"><label for="weekly-next-focus">最终总结（只需填写这一项）</label><input id="weekly-next-focus" type="text" maxlength="120" value="${escapeHtml(savedNote)}" placeholder="例如：下周先守住数学、信号和单词三个保底任务"></div>
     `,
     actions: `<button type="button" class="secondary-button" data-dialog-close>关闭</button><button type="button" class="primary-button" id="save-weekly-review">保存周复盘</button>`
   });
   $("[data-dialog-close]").addEventListener("click", closeDialog);
   $("#save-weekly-review").addEventListener("click", () => {
     state.weeklyReviews[mondayKey] = { date: localDateKey(), completion: summary.completion, nextFocus: $("#weekly-next-focus").value.trim() };
-    saveState();
-    closeDialog();
-    showToast("本周复盘已保存");
+    saveState(); closeDialog(); showToast("本周复盘已保存");
   });
-}
-function openManualLogDialog() {
+}function openManualLogDialog() {
   const daily = getDaily();
   showDialog({
     kicker: "数据复盘",
@@ -1281,7 +1429,7 @@ function openManualLogDialog() {
       <div class="form-grid">
         <div class="form-field">
           <label for="log-minutes">净学习分钟</label>
-          <input id="log-minutes" type="number" min="0" max="1440" value="${daily.studyMinutes}">
+          <input id="log-minutes" type="number" min="0" max="1440" value="${getEffectiveStudyMinutes(daily)}">
         </div>
         <div class="form-field">
           <label for="log-words">单词背诵量</label>
