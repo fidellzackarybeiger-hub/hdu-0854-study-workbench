@@ -1,6 +1,6 @@
 const STORAGE_KEY = "hdu0854-workbench-v1";
 const REVIEW_INTERVALS = [1, 3, 7, 14];
-const DATA_VERSION = 4;
+const DATA_VERSION = 5;
 const THEME_COLORS = { blue: "#24313d", graphite: "#24272a", coral: "#332727", teal: "#203033", green: "#1f2923" };
 
 const SUBJECT_META = {
@@ -46,6 +46,8 @@ const DEFAULT_STATE = {
     wakeStartDate: "2026-08-02",
     wakeCurrent: "08:00",
     wakeTarget: "07:00",
+    sleepTarget: "23:30",
+    sleepGoalMinutes: 450,
     wakeTransitionDays: 10,
     lastBackupDate: ""
   },
@@ -133,6 +135,11 @@ function normalizeDaily(daily = {}) {
     chapters: 0,
     readingTotal: 0,
     readingWrong: 0,
+    studyMinutesOverride: null,
+    wakeTime: "",
+    sleepTime: "",
+    reflection: "",
+    tomorrowPriority: "",
     statusMode: "good",
     blockBufferUsed: { morning: 0, afternoon: 0, evening: 0 },
     ...daily,
@@ -351,8 +358,46 @@ function taskExecutionScore(task) {
 }
 function getEffectiveStudyMinutes(daily) {
   if (!daily) return 0;
+  if (daily.studyMinutesOverride !== null && daily.studyMinutesOverride !== undefined && Number.isFinite(Number(daily.studyMinutesOverride))) {
+    return clamp(Number(daily.studyMinutesOverride), 0, 1440);
+  }
   const taskMinutes = (daily.tasks || []).filter((task) => task.kind === "study").reduce((sum, task) => sum + Math.max(0, Number(task.actualMinutes) || 0), 0);
   return Math.max(Math.max(0, Number(daily.studyMinutes) || 0), taskMinutes);
+}
+
+function timeToMinutes(value) {
+  if (!/^\d{2}:\d{2}$/.test(String(value || ""))) return null;
+  const [hours, minutes] = String(value).split(":").map(Number);
+  if (hours > 23 || minutes > 59) return null;
+  return hours * 60 + minutes;
+}
+
+function currentTimeValue() {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
+function offsetDateKey(dateKey, offset) {
+  const date = parseLocalDate(dateKey);
+  date.setDate(date.getDate() + offset);
+  return localDateKey(date);
+}
+
+function getSleepDuration(dateKey = localDateKey()) {
+  const wakeTime = state.daily[dateKey]?.wakeTime;
+  const sleepTime = state.daily[offsetDateKey(dateKey, -1)]?.sleepTime;
+  const wakeMinutes = timeToMinutes(wakeTime);
+  const sleepMinutes = timeToMinutes(sleepTime);
+  if (wakeMinutes === null || sleepMinutes === null) return null;
+  const duration = sleepMinutes < 360 ? wakeMinutes - sleepMinutes : (24 * 60 - sleepMinutes) + wakeMinutes;
+  return clamp(duration, 0, 24 * 60);
+}
+
+function formatClockDuration(minutes) {
+  if (minutes === null || minutes === undefined) return "待记录";
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours}小时${rest}分` : `${hours}小时`;
 }
 function getPoliticsCountdown() {
   const startDate = state.settings.politicsStartDate || "2026-08-15";
@@ -370,8 +415,120 @@ function renderMinimumPlan(daily) {
     <div class="minimum-heading"><span><i data-lucide="shield-check"></i><b>今日最低完成</b></span><strong class="${achieved ? "achieved" : ""}">${achieved ? "今日达标" : `${done}/${minimumTasks.length}`}</strong></div>
     <div class="minimum-items">${minimumTasks.map((task) => `<span class="${isTaskComplete(task) ? "done" : ""}"><i data-lucide="${isTaskComplete(task) ? "check-circle-2" : "circle"}"></i>${escapeHtml(task.title)}</span>`).join("") || "<span>当前状态下只执行恢复任务</span>"}</div>
   `;
+  const carriedPriority = state.daily[offsetDateKey(localDateKey(), -1)]?.tomorrowPriority || "";
+  if (carriedPriority) {
+    $("#minimum-plan").insertAdjacentHTML("beforeend", `<div class="carry-priority"><i data-lucide="corner-down-right"></i><span>昨日设定的第一任务：<b>${escapeHtml(carriedPriority)}</b></span></div>`);
+  }
   const politics = getPoliticsCountdown();
   $("#politics-reminder").innerHTML = `<i data-lucide="bell-ring"></i><span><b>${escapeHtml(politics.label)}</b><small>${escapeHtml(politics.detail)}</small></span>`;
+}
+
+function formatMinutesAsTime(minutes) {
+  if (!Number.isFinite(minutes)) return "待记录";
+  const normalized = ((Math.round(minutes) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
+}
+
+function renderRoutine() {
+  const todayKey = localDateKey();
+  const daily = getDaily(todayKey);
+  const now = new Date();
+  const sleepDisplayKey = now.getHours() < 6 ? offsetDateKey(todayKey, -1) : todayKey;
+  const sleepDisplay = state.daily[sleepDisplayKey]?.sleepTime || "";
+  const duration = getSleepDuration(todayKey);
+  const wakeTarget = getWakeRecommendation();
+  const goal = Math.max(60, Number(state.settings.sleepGoalMinutes) || 450);
+  const wakeRecorded = Boolean(daily.wakeTime);
+  const sleepRecorded = Boolean(sleepDisplay);
+
+  $("#wake-checkin-time").textContent = daily.wakeTime || "未打卡";
+  $("#sleep-checkin-time").textContent = sleepDisplay || "未打卡";
+  $("#sleep-duration").textContent = formatClockDuration(duration);
+  $("#routine-targets").textContent = `目标起床 ${wakeTarget} · 目标睡觉 ${state.settings.sleepTarget || "23:30"}`;
+  $("#wake-checkin-button").textContent = wakeRecorded ? "重新打卡" : "现在打卡";
+  $("#sleep-checkin-button").textContent = sleepRecorded ? "重新打卡" : "现在打卡";
+
+  const durationDiff = duration === null ? null : duration - goal;
+  $("#sleep-result").textContent = duration === null
+    ? "需记录昨晚睡觉和今早起床"
+    : durationDiff >= 0 ? `达到 ${formatClockDuration(goal)} 睡眠目标` : `距睡眠目标少 ${formatClockDuration(Math.abs(durationDiff))}`;
+  $("#routine-status").textContent = wakeRecorded && sleepRecorded
+    ? "今日两项已完成"
+    : wakeRecorded ? "起床已记录，睡前记得打卡" : "起床后先完成第一项打卡";
+}
+
+function getRoutineDateKey(type) {
+  const now = new Date();
+  return type === "sleep" && now.getHours() < 6 ? offsetDateKey(localDateKey(now), -1) : localDateKey(now);
+}
+
+function recordRoutine(type) {
+  const key = getRoutineDateKey(type);
+  const daily = getDaily(key);
+  const field = type === "wake" ? "wakeTime" : "sleepTime";
+  if (daily[field] && !confirm(`已记录为 ${daily[field]}，确定用当前时间覆盖吗？`)) return;
+  daily[field] = currentTimeValue();
+  saveState();
+  renderToday();
+  showToast(type === "wake" ? "起床打卡已记录" : "睡觉打卡已记录");
+}
+
+function openRoutineEditDialog(type) {
+  const defaultDate = getRoutineDateKey(type);
+  const field = type === "wake" ? "wakeTime" : "sleepTime";
+  const label = type === "wake" ? "起床" : "睡觉";
+  const daily = getDaily(defaultDate);
+  showDialog({
+    kicker: "作息打卡",
+    title: `修改${label}记录`,
+    content: `
+      <div class="form-grid">
+        <div class="form-field"><label for="routine-date">日期</label><input id="routine-date" type="date" max="${localDateKey()}" value="${defaultDate}"></div>
+        <div class="form-field"><label for="routine-time">${label}时间</label><input id="routine-time" type="time" value="${escapeHtml(daily[field] || currentTimeValue())}"></div>
+      </div>
+      <p class="form-help">凌晨 6 点前的睡觉打卡默认归入前一天，便于第二天起床后正确计算昨晚睡眠。</p>
+    `,
+    actions: `<button type="button" class="secondary-button" id="clear-routine-record">清除记录</button><button type="button" class="secondary-button" data-dialog-close>取消</button><button type="button" class="primary-button" id="save-routine-record">保存</button>`
+  });
+  $("#routine-date").addEventListener("change", () => {
+    $("#routine-time").value = state.daily[$("#routine-date").value]?.[field] || currentTimeValue();
+  });
+  $("[data-dialog-close]").addEventListener("click", closeDialog);
+  $("#clear-routine-record").addEventListener("click", () => {
+    getDaily($("#routine-date").value)[field] = "";
+    saveState(); closeDialog(); renderToday(); showToast(`${label}记录已清除`);
+  });
+  $("#save-routine-record").addEventListener("click", () => {
+    const time = $("#routine-time").value;
+    if (!time) { showToast("请选择打卡时间"); return; }
+    getDaily($("#routine-date").value)[field] = time;
+    saveState(); closeDialog(); renderToday(); showToast(`${label}时间已更新`);
+  });
+}
+
+function renderRoutineWeekSummary() {
+  const wakeValues = [];
+  const sleepDurations = [];
+  let hitDays = 0;
+  const wakeTarget = timeToMinutes(state.settings.wakeTarget || "07:00");
+  const sleepGoal = Math.max(60, Number(state.settings.sleepGoalMinutes) || 450);
+  const today = startOfToday();
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - offset);
+    const key = localDateKey(date);
+    const wake = timeToMinutes(state.daily[key]?.wakeTime);
+    const duration = getSleepDuration(key);
+    if (wake !== null) wakeValues.push(wake);
+    if (duration !== null && duration <= 960) sleepDurations.push(duration);
+    if (wake !== null && duration !== null && wake <= wakeTarget + 30 && duration >= sleepGoal - 30) hitDays += 1;
+  }
+  const wakeAverage = wakeValues.length ? wakeValues.reduce((sum, value) => sum + value, 0) / wakeValues.length : null;
+  const sleepAverage = sleepDurations.length ? sleepDurations.reduce((sum, value) => sum + value, 0) / sleepDurations.length : null;
+  $("#week-wake-count").textContent = `${wakeValues.length} / 7`;
+  $("#week-wake-average").textContent = wakeAverage === null ? "待记录" : formatMinutesAsTime(wakeAverage);
+  $("#week-sleep-average").textContent = sleepAverage === null ? "待记录" : formatClockDuration(Math.round(sleepAverage));
+  $("#week-routine-hit").textContent = `${hitDays} 天`;
 }
 
 function renderToday() {
@@ -393,6 +550,7 @@ function renderToday() {
 
   $("#today-label").textContent = formatDateLabel();
   $("#study-minutes").textContent = effectiveStudyMinutes;
+  $("#study-target-minutes").textContent = ` / ${state.settings.dailyTargetMinutes} 分钟`;
   $("#word-count").textContent = daily.words;
   $("#mistake-count").textContent = daily.mistakes;
   $("#completion-rate").textContent = completionRate;
@@ -419,10 +577,12 @@ function renderToday() {
   $("#status-advice").textContent = advice;
   $$("#status-mode button").forEach((button) => button.classList.toggle("active", button.dataset.status === daily.statusMode));
   renderMinimumPlan(daily);
+  renderRoutine();
   renderTasks();
   renderWeeklyChart();
   renderYearOverview();
   renderTargetTrend();
+  renderRoutineWeekSummary();
   renderReviewReminder();
   renderStageQuality();
   renderBackupReminder();
@@ -557,6 +717,7 @@ function renderWeeklyChart() {
     `;
   }).join("");
   $("#weekly-total").textContent = `${(total / 60).toFixed(1)} 小时`;
+  $("#weekly-target-label").textContent = `日目标 ${(target / 60).toFixed(target % 60 ? 1 : 0)}h`;
 }
 
 function formatCompactHours(minutes) {
@@ -911,12 +1072,14 @@ function openSettingsDialog() {
         </div>
       </div>
       <div class="dialog-section">
-        <h3>起床过渡期</h3>
+        <h3>作息目标与起床过渡</h3>
         <div class="form-grid">
           <div class="form-field"><label for="wake-start-date">过渡开始日期</label><input id="wake-start-date" type="date" value="${escapeHtml(s.wakeStartDate)}"></div>
           <div class="form-field"><label for="wake-days">过渡天数</label><input id="wake-days" type="number" min="1" max="30" value="${s.wakeTransitionDays}"></div>
           <div class="form-field"><label for="wake-current">当前起床时间</label><input id="wake-current" type="time" value="${escapeHtml(s.wakeCurrent)}"></div>
           <div class="form-field"><label for="wake-target">目标起床时间</label><input id="wake-target" type="time" value="${escapeHtml(s.wakeTarget)}"></div>
+          <div class="form-field"><label for="sleep-target">目标睡觉时间</label><input id="sleep-target" type="time" value="${escapeHtml(s.sleepTarget || "23:30")}"></div>
+          <div class="form-field"><label for="sleep-goal-hours">目标睡眠小时</label><input id="sleep-goal-hours" type="number" min="4" max="12" step="0.5" value="${(Number(s.sleepGoalMinutes || 450) / 60).toFixed(1)}"></div>
         </div>
       </div>
       <div class="dialog-section">
@@ -971,6 +1134,8 @@ function openSettingsDialog() {
       wakeTransitionDays: clamp(Number($("#wake-days").value), 1, 30),
       wakeCurrent: $("#wake-current").value || "08:00",
       wakeTarget: $("#wake-target").value || "07:00",
+      sleepTarget: $("#sleep-target").value || "23:30",
+      sleepGoalMinutes: clamp(Math.round((Number($("#sleep-goal-hours").value) || 7.5) * 60), 240, 720),
       scoreTotal: Number($("#score-total").value) || 360,
       scoreMath: Number($("#score-math").value) || 120,
       scoreEnglish: Number($("#score-english").value) || 65,
@@ -1420,56 +1585,77 @@ function openWeeklyReviewDialog() {
     state.weeklyReviews[mondayKey] = { date: localDateKey(), completion: summary.completion, nextFocus: $("#weekly-next-focus").value.trim() };
     saveState(); closeDialog(); showToast("本周复盘已保存");
   });
-}function openManualLogDialog() {
-  const daily = getDaily();
+}
+
+function openManualLogDialog(initialDate = localDateKey()) {
   showDialog({
     kicker: "数据复盘",
-    title: "补录今日数据",
+    title: "每日复盘与数据",
     content: `
-      <div class="form-grid">
-        <div class="form-field">
-          <label for="log-minutes">净学习分钟</label>
-          <input id="log-minutes" type="number" min="0" max="1440" value="${getEffectiveStudyMinutes(daily)}">
-        </div>
-        <div class="form-field">
-          <label for="log-words">单词背诵量</label>
-          <input id="log-words" type="number" min="0" value="${daily.words}">
-        </div>
-        <div class="form-field">
-          <label for="log-mistakes">新增错题数</label>
-          <input id="log-mistakes" type="number" min="0" value="${daily.mistakes}">
-        </div>
-        <div class="form-field">
-          <label for="log-math">数学刷题量</label>
-          <input id="log-math" type="number" min="0" value="${daily.mathProblems}">
-        </div>
-        <div class="form-field">
-          <label for="log-signal">专业课刷题量</label>
-          <input id="log-signal" type="number" min="0" value="${daily.signalProblems}">
-        </div>
-        <div class="form-field">
-          <label for="log-chapters">推进章节数</label>
-          <input id="log-chapters" type="number" min="0" step="0.5" value="${daily.chapters}">
-        </div>
-        <div class="form-field">
-          <label for="log-reading-total">英语阅读答题数</label>
-          <input id="log-reading-total" type="number" min="0" value="${daily.readingTotal}">
-        </div>
-        <div class="form-field">
-          <label for="log-reading-wrong">英语阅读错题数</label>
-          <input id="log-reading-wrong" type="number" min="0" value="${daily.readingWrong}">
+      <div class="form-field full review-date-field">
+        <label for="log-date">复盘日期</label>
+        <input id="log-date" type="date" max="${localDateKey()}" value="${escapeHtml(initialDate)}">
+      </div>
+      <div class="dialog-section">
+        <h3>当天最终净学习时长</h3>
+        <div class="duration-inputs">
+          <label><input id="log-hours" type="number" min="0" max="24" step="1"><span>小时</span></label>
+          <label><input id="log-minute-part" type="number" min="0" max="59" step="5"><span>分钟</span></label>
+          <small id="log-duration-mode">保存后以手动值为准</small>
         </div>
       </div>
-      <p class="form-help">番茄钟完成后会自动累计学习时长；这里用于补录线下学习记录。</p>
+      <div class="form-grid">
+        <div class="form-field"><label for="log-words">单词背诵量</label><input id="log-words" type="number" min="0"></div>
+        <div class="form-field"><label for="log-mistakes">新增错题数</label><input id="log-mistakes" type="number" min="0"></div>
+        <div class="form-field"><label for="log-math">数学刷题量</label><input id="log-math" type="number" min="0"></div>
+        <div class="form-field"><label for="log-signal">专业课刷题量</label><input id="log-signal" type="number" min="0"></div>
+        <div class="form-field"><label for="log-chapters">推进章节数</label><input id="log-chapters" type="number" min="0" step="0.5"></div>
+        <div class="form-field"><label for="log-reading-total">英语阅读答题数</label><input id="log-reading-total" type="number" min="0"></div>
+        <div class="form-field"><label for="log-reading-wrong">英语阅读错题数</label><input id="log-reading-wrong" type="number" min="0"></div>
+        <div class="form-field"><label for="log-reflection">一句复盘</label><input id="log-reflection" type="text" maxlength="100" placeholder="今天最需要改进的一点"></div>
+        <div class="form-field full"><label for="log-tomorrow-priority">明日第一任务</label><input id="log-tomorrow-priority" type="text" maxlength="100" placeholder="明天坐下后先做什么"></div>
+      </div>
+      <p class="form-help">手动设置后，该数值就是所选日期的最终净学习时长，不再被任务预计时间覆盖；之后完成番茄计时仍会继续累加。</p>
     `,
     actions: `
+      <button type="button" class="secondary-button" id="clear-study-override">恢复自动统计</button>
       <button type="button" class="secondary-button" data-dialog-close>取消</button>
-      <button type="button" class="primary-button" id="save-log-button">保存数据</button>
+      <button type="button" class="primary-button" id="save-log-button">保存复盘</button>
     `
   });
+
+  const fillForm = () => {
+    const daily = getDaily($("#log-date").value);
+    const minutes = getEffectiveStudyMinutes(daily);
+    $("#log-hours").value = Math.floor(minutes / 60);
+    $("#log-minute-part").value = minutes % 60;
+    $("#log-words").value = daily.words;
+    $("#log-mistakes").value = daily.mistakes;
+    $("#log-math").value = daily.mathProblems;
+    $("#log-signal").value = daily.signalProblems;
+    $("#log-chapters").value = daily.chapters;
+    $("#log-reading-total").value = daily.readingTotal;
+    $("#log-reading-wrong").value = daily.readingWrong;
+    $("#log-reflection").value = daily.reflection || "";
+    $("#log-tomorrow-priority").value = daily.tomorrowPriority || "";
+    $("#log-duration-mode").textContent = daily.studyMinutesOverride === null ? "当前为自动统计，保存后改为手动值" : "当前已使用手动最终值";
+  };
+  fillForm();
+  $("#log-date").addEventListener("change", fillForm);
   $("[data-dialog-close]").addEventListener("click", closeDialog);
+  $("#clear-study-override").addEventListener("click", () => {
+    const daily = getDaily($("#log-date").value);
+    daily.studyMinutesOverride = null;
+    saveState();
+    fillForm();
+    if ($("#log-date").value === localDateKey()) renderToday();
+    showToast("已恢复任务与计时自动统计");
+  });
   $("#save-log-button").addEventListener("click", () => {
-    daily.studyMinutes = clamp(Number($("#log-minutes").value) || 0, 0, 1440);
+    const dateKey = $("#log-date").value;
+    const daily = getDaily(dateKey);
+    const exactMinutes = clamp((Number($("#log-hours").value) || 0) * 60 + (Number($("#log-minute-part").value) || 0), 0, 1440);
+    daily.studyMinutesOverride = exactMinutes;
     daily.words = Math.max(0, Number($("#log-words").value) || 0);
     daily.mistakes = Math.max(0, Number($("#log-mistakes").value) || 0);
     daily.mathProblems = Math.max(0, Number($("#log-math").value) || 0);
@@ -1477,13 +1663,14 @@ function openWeeklyReviewDialog() {
     daily.chapters = Math.max(0, Number($("#log-chapters").value) || 0);
     daily.readingTotal = Math.max(0, Number($("#log-reading-total").value) || 0);
     daily.readingWrong = clamp(Number($("#log-reading-wrong").value) || 0, 0, daily.readingTotal);
+    daily.reflection = $("#log-reflection").value.trim();
+    daily.tomorrowPriority = $("#log-tomorrow-priority").value.trim();
     saveState();
     closeDialog();
     renderToday();
-    showToast("今日数据已更新");
+    showToast(`${dateKey.slice(5).replace("-", ".")} 复盘已保存`);
   });
 }
-
 function updateTimerDisplay() {
   const minutes = Math.floor(timerRemaining / 60);
   const seconds = timerRemaining % 60;
@@ -1528,7 +1715,9 @@ function completeTimer() {
   const minutes = Math.round(timerTotal / 60);
   const completedWasBreak = timerIsBreak;
   if (!completedWasBreak) {
-    getDaily().studyMinutes += minutes;
+    const daily = getDaily();
+    if (daily.studyMinutesOverride !== null && daily.studyMinutesOverride !== undefined) daily.studyMinutesOverride = clamp(Number(daily.studyMinutesOverride) + minutes, 0, 1440);
+    else daily.studyMinutes += minutes;
     saveState();
     renderToday();
     showToast(`完成 ${minutes} 分钟${$("#timer-subject").value}专注，已计入今日时长`);
@@ -1601,7 +1790,7 @@ function setupMobilePages() {
   if (mobilePagesReady || window.innerWidth > 860) return;
   const workspace = $(".workspace");
   const definitions = [
-    { id: "mobile-page-overview", title: "总览", selectors: [".topbar", ".countdown-panel", ".metrics-strip", ".output-strip", ".quick-section"] },
+    { id: "mobile-page-overview", title: "总览", selectors: [".topbar", ".countdown-panel", ".metrics-strip", ".routine-strip", ".output-strip", ".quick-section"] },
     { id: "mobile-page-plan", title: "今日计划", selectors: ["#today-plan"] },
     { id: "mobile-page-focus", title: "专注计时", selectors: ["#focus-panel", ".target-panel"] },
     { id: "mobile-page-summer", title: "暑假战役", selectors: ["#summer-plan"] },
@@ -1686,7 +1875,10 @@ function bindEvents() {
   $("#mobile-settings-button").addEventListener("click", openSettingsDialog);
   $$('[data-open-settings]').forEach((button) => button.addEventListener("click", openSettingsDialog));
   $("#add-task-button").addEventListener("click", openAddTaskDialog);
-  $("#manual-log-button").addEventListener("click", openManualLogDialog);
+  $("#manual-log-button").addEventListener("click", () => openManualLogDialog());
+  $("#wake-checkin-button").addEventListener("click", () => recordRoutine("wake"));
+  $("#sleep-checkin-button").addEventListener("click", () => recordRoutine("sleep"));
+  $$('[data-edit-checkin]').forEach((button) => button.addEventListener("click", () => openRoutineEditDialog(button.dataset.editCheckin)));
   $("#weekly-review-button").addEventListener("click", openWeeklyReviewDialog);
   $("#stage-quality-button").addEventListener("click", openStageQualityDialog);
   $("#export-button").addEventListener("click", exportData);
